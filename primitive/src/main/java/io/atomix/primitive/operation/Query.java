@@ -28,8 +28,13 @@ import java.lang.annotation.Target;
 public @interface Query {
 
   /**
-   * The operation name.
+   * The name of the query. This must be unique within a service interface.
    */
   String value() default "";
+
+  /**
+   * The version in which the query was introduced. This is used to determine compatibility.
+   */
+  String since() default "";
 
 }

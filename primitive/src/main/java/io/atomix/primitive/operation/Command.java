@@ -28,8 +28,13 @@ import java.lang.annotation.Target;
 public @interface Command {
 
   /**
-   * The operation name.
+   * The name of the command. This must be unique within a service interface.
    */
   String value() default "";
+
+  /**
+   * The version in which the command was introduced. This is used to determine compatibility.
+   */
+  String since() default "";
 
 }
