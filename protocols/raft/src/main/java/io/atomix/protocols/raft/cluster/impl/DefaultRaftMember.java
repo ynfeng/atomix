@@ -22,6 +22,7 @@ import io.atomix.protocols.raft.cluster.RaftMember;
 import io.atomix.protocols.raft.protocol.RaftResponse;
 import io.atomix.protocols.raft.protocol.ReconfigureRequest;
 import io.atomix.protocols.raft.storage.system.Configuration;
+import io.atomix.utils.Version;
 import io.atomix.utils.concurrent.Scheduled;
 
 import java.time.Instant;
@@ -41,17 +42,19 @@ public final class DefaultRaftMember implements RaftMember, AutoCloseable {
   private final MemberId id;
   private final int hash;
   private Type type;
+  private Version version;
   private Instant updated;
   private transient Scheduled configureTimeout;
   private transient RaftClusterContext cluster;
   private final transient Set<Consumer<Type>> typeChangeListeners = new CopyOnWriteArraySet<>();
 
-  public DefaultRaftMember(MemberId id, Type type, Instant updated) {
+  public DefaultRaftMember(MemberId id, Type type, Version version, Instant updated) {
     this.id = checkNotNull(id, "id cannot be null");
     this.hash = Hashing.murmur3_32()
         .hashUnencodedChars(id.id())
         .asInt();
     this.type = checkNotNull(type, "type cannot be null");
+    this.version = version;
     this.updated = checkNotNull(updated, "updated cannot be null");
   }
 
@@ -85,6 +88,11 @@ public final class DefaultRaftMember implements RaftMember, AutoCloseable {
   @Override
   public RaftMember.Type getType() {
     return type;
+  }
+
+  @Override
+  public Version getVersion() {
+    return version;
   }
 
   @Override
@@ -139,9 +147,10 @@ public final class DefaultRaftMember implements RaftMember, AutoCloseable {
    * @param type The member type.
    * @return The member.
    */
-  public DefaultRaftMember update(RaftMember.Type type, Instant time) {
+  public DefaultRaftMember update(RaftMember.Type type, Version version, Instant time) {
     if (this.type != type) {
       this.type = checkNotNull(type, "type cannot be null");
+      this.version = checkNotNull(version, "version cannot be null");
       if (time.isAfter(updated)) {
         this.updated = checkNotNull(time, "time cannot be null");
       }
@@ -179,7 +188,7 @@ public final class DefaultRaftMember implements RaftMember, AutoCloseable {
     cluster.getContext().getRaftRole().onReconfigure(ReconfigureRequest.builder()
         .withIndex(cluster.getConfiguration().index())
         .withTerm(cluster.getConfiguration().term())
-        .withMember(new DefaultRaftMember(id, type, updated))
+        .withMember(new DefaultRaftMember(id, type, version, updated))
         .build()).whenComplete((response, error) -> {
       if (error == null) {
         if (response.status() == RaftResponse.Status.OK) {

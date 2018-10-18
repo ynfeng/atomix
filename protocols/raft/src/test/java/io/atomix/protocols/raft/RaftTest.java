@@ -63,6 +63,7 @@ import io.atomix.protocols.raft.storage.log.entry.OpenSessionEntry;
 import io.atomix.protocols.raft.storage.log.entry.QueryEntry;
 import io.atomix.protocols.raft.storage.system.Configuration;
 import io.atomix.storage.StorageLevel;
+import io.atomix.utils.Version;
 import io.atomix.utils.concurrent.SingleThreadContext;
 import io.atomix.utils.concurrent.ThreadContext;
 import io.atomix.utils.serializer.Namespace;
@@ -1627,6 +1628,11 @@ public class RaftTest extends ConcurrentTestCase {
     @Override
     public Type getType() {
       return type;
+    }
+
+    @Override
+    public Version getVersion() {
+      return null;
     }
 
     @Override

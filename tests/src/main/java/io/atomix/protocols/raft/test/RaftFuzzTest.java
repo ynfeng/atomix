@@ -91,6 +91,7 @@ import io.atomix.protocols.raft.test.protocol.LocalRaftProtocolFactory;
 import io.atomix.protocols.raft.test.protocol.RaftClientMessagingProtocol;
 import io.atomix.protocols.raft.test.protocol.RaftServerMessagingProtocol;
 import io.atomix.storage.StorageLevel;
+import io.atomix.utils.Version;
 import io.atomix.utils.concurrent.Scheduled;
 import io.atomix.utils.concurrent.Scheduler;
 import io.atomix.utils.concurrent.SingleThreadContext;
@@ -747,6 +748,11 @@ public class RaftFuzzTest implements Runnable {
     @Override
     public Type getType() {
       return type;
+    }
+
+    @Override
+    public Version getVersion() {
+      return null;
     }
 
     @Override

@@ -150,6 +150,7 @@ public class DefaultPartitionService implements ManagedPartitionService {
                 .thenCompose(s -> {
                   PartitionManagementService managementService = new DefaultPartitionManagementService(
                       clusterMembershipService,
+                      groupMembershipService,
                       communicationService,
                       primitiveTypeRegistry,
                       electionService,
@@ -168,6 +169,7 @@ public class DefaultPartitionService implements ManagedPartitionService {
             .thenCompose(v2 -> systemSessionIdService.start())
             .thenApply(v2 -> new DefaultPartitionManagementService(
                 clusterMembershipService,
+                groupMembershipService,
                 communicationService,
                 primitiveTypeRegistry,
                 systemElectionService,

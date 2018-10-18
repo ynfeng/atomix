@@ -69,6 +69,7 @@ public class PrimaryBackupPartitionClient implements PartitionClient, Managed<Pr
         .withClientName(partition.name())
         .withPartitionId(partition.id())
         .withMembershipService(managementService.getMembershipService())
+        .withGroupMembershipService(managementService.getGroupMembershipService())
         .withProtocol(new PrimaryBackupClientCommunicator(
             partition.name(),
             Serializer.using(PrimaryBackupNamespaces.PROTOCOL),

@@ -23,6 +23,7 @@ import io.atomix.primitive.operation.PrimitiveOperation;
 import io.atomix.primitive.partition.PartitionId;
 import io.atomix.primitive.session.SessionClient;
 import io.atomix.primitive.session.SessionId;
+import io.atomix.utils.Version;
 import io.atomix.utils.concurrent.ThreadContext;
 
 import java.util.concurrent.CompletableFuture;
@@ -68,6 +69,11 @@ public class DelegatingSessionClient implements SessionClient {
   @Override
   public PrimitiveState getState() {
     return session.getState();
+  }
+
+  @Override
+  public Version getVersion() {
+    return session.getVersion();
   }
 
   @Override

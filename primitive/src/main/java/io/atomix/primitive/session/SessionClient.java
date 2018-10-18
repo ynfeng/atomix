@@ -21,6 +21,7 @@ import io.atomix.primitive.event.EventType;
 import io.atomix.primitive.event.PrimitiveEvent;
 import io.atomix.primitive.operation.PrimitiveOperation;
 import io.atomix.primitive.partition.PartitionId;
+import io.atomix.utils.Version;
 import io.atomix.utils.concurrent.ThreadContext;
 
 import java.util.concurrent.CompletableFuture;
@@ -51,6 +52,13 @@ public interface SessionClient {
    * @return The session state.
    */
   PrimitiveState getState();
+
+  /**
+   * Returns the current version of the session.
+   *
+   * @return the current version of the session
+   */
+  Version getVersion();
 
   /**
    * Returns the proxy session identifier.

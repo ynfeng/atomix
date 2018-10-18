@@ -29,6 +29,7 @@ import io.atomix.protocols.raft.ReadConsistency;
 import io.atomix.protocols.raft.protocol.RaftClientProtocol;
 import io.atomix.protocols.raft.session.CommunicationStrategy;
 import io.atomix.protocols.raft.session.RaftSessionClient;
+import io.atomix.utils.Version;
 import io.atomix.utils.concurrent.Futures;
 import io.atomix.utils.concurrent.ThreadContext;
 import io.atomix.utils.logging.LoggerContext;
@@ -131,6 +132,11 @@ public class DefaultRaftSessionClient implements RaftSessionClient {
   @Override
   public PrimitiveState getState() {
     return state.getState();
+  }
+
+  @Override
+  public Version getVersion() {
+    return state.getVersion();
   }
 
   @Override

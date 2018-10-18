@@ -27,6 +27,7 @@ import io.atomix.primitive.operation.PrimitiveOperation;
 import io.atomix.primitive.partition.PartitionId;
 import io.atomix.primitive.session.SessionClient;
 import io.atomix.primitive.session.SessionId;
+import io.atomix.utils.Version;
 import io.atomix.utils.concurrent.Futures;
 import io.atomix.utils.concurrent.OrderedFuture;
 import io.atomix.utils.concurrent.Scheduled;
@@ -111,6 +112,12 @@ public class RecoveringSessionClient implements SessionClient {
   @Override
   public PrimitiveState getState() {
     return state;
+  }
+
+  @Override
+  public Version getVersion() {
+    SessionClient session = this.session;
+    return session != null ? session.getVersion() : null;
   }
 
   /**

@@ -21,6 +21,7 @@ import com.google.common.collect.Sets;
 import io.atomix.cluster.ClusterMembershipEvent;
 import io.atomix.cluster.ClusterMembershipEventListener;
 import io.atomix.cluster.ClusterMembershipService;
+import io.atomix.cluster.Member;
 import io.atomix.primitive.Consistency;
 import io.atomix.primitive.PrimitiveException;
 import io.atomix.primitive.PrimitiveState;
@@ -30,6 +31,9 @@ import io.atomix.primitive.Replication;
 import io.atomix.primitive.event.EventType;
 import io.atomix.primitive.event.PrimitiveEvent;
 import io.atomix.primitive.operation.PrimitiveOperation;
+import io.atomix.primitive.partition.PartitionGroupMembershipEvent;
+import io.atomix.primitive.partition.PartitionGroupMembershipEventListener;
+import io.atomix.primitive.partition.PartitionGroupMembershipService;
 import io.atomix.primitive.partition.PartitionId;
 import io.atomix.primitive.partition.PrimaryElection;
 import io.atomix.primitive.partition.PrimaryElectionEventListener;
@@ -41,6 +45,7 @@ import io.atomix.protocols.backup.protocol.ExecuteRequest;
 import io.atomix.protocols.backup.protocol.PrimaryBackupClientProtocol;
 import io.atomix.protocols.backup.protocol.PrimaryBackupResponse.Status;
 import io.atomix.protocols.backup.protocol.PrimitiveDescriptor;
+import io.atomix.utils.Version;
 import io.atomix.utils.concurrent.ComposableFuture;
 import io.atomix.utils.concurrent.Futures;
 import io.atomix.utils.concurrent.ThreadContext;
@@ -50,12 +55,16 @@ import org.slf4j.Logger;
 
 import java.net.ConnectException;
 import java.time.Duration;
+import java.util.Comparator;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
+import java.util.function.BinaryOperator;
 import java.util.function.Consumer;
+import java.util.function.Function;
 
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
@@ -79,8 +88,10 @@ public class PrimaryBackupSessionClient implements SessionClient {
   private final Map<EventType, Set<Consumer<PrimitiveEvent>>> eventListeners = Maps.newHashMap();
   private final PrimaryElectionEventListener primaryElectionListener = event -> changeReplicas(event.term());
   private final ClusterMembershipEventListener membershipEventListener = this::handleClusterEvent;
+  private final PartitionGroupMembershipEventListener groupMembershipEventListener = this::handleGroupMembershipEvent;
   private PrimaryTerm term;
   private volatile PrimitiveState state = PrimitiveState.CLOSED;
+  private volatile Version version;
 
   public PrimaryBackupSessionClient(
       String clientName,
@@ -89,6 +100,7 @@ public class PrimaryBackupSessionClient implements SessionClient {
       PrimitiveType primitiveType,
       PrimitiveDescriptor descriptor,
       ClusterMembershipService clusterMembershipService,
+      PartitionGroupMembershipService groupMembershipService,
       PrimaryBackupClientProtocol protocol,
       PrimaryElection primaryElection,
       ThreadContext threadContext) {
@@ -100,8 +112,17 @@ public class PrimaryBackupSessionClient implements SessionClient {
     this.protocol = protocol;
     this.primaryElection = primaryElection;
     this.threadContext = threadContext;
+    this.version = groupMembershipService.getMembership(partitionId.group())
+        .members()
+        .stream()
+        .map(clusterMembershipService::getMember)
+        .filter(Objects::nonNull)
+        .map(Member::version)
+        .reduce(BinaryOperator.minBy(Comparator.comparing(Function.identity())))
+        .orElse(null);
     clusterMembershipService.addListener(membershipEventListener);
     primaryElection.addListener(primaryElectionListener);
+    groupMembershipService.addListener(groupMembershipEventListener);
     this.log = ContextualLoggerFactory.getLogger(getClass(), LoggerContext.builder(SessionClient.class)
         .addValue(clientName)
         .add("type", primitiveType.name())
@@ -127,6 +148,11 @@ public class PrimaryBackupSessionClient implements SessionClient {
   @Override
   public PrimitiveState getState() {
     return state;
+  }
+
+  @Override
+  public Version getVersion() {
+    return version;
   }
 
   @Override
@@ -255,6 +281,20 @@ public class PrimaryBackupSessionClient implements SessionClient {
         state = PrimitiveState.SUSPENDED;
         stateChangeListeners.forEach(l -> l.accept(state));
       });
+    }
+  }
+
+  /**
+   * Handles a partition group membership event.
+   */
+  private void handleGroupMembershipEvent(PartitionGroupMembershipEvent event) {
+    if (event.membership().group().equals(partitionId.group())) {
+      version = event.membership().members().stream()
+          .map(clusterMembershipService::getMember)
+          .filter(Objects::nonNull)
+          .map(Member::version)
+          .reduce(BinaryOperator.minBy(Comparator.comparing(Function.identity())))
+          .orElse(null);
     }
   }
 

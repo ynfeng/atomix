@@ -20,6 +20,7 @@ import io.atomix.primitive.PrimitiveType;
 import io.atomix.primitive.operation.PrimitiveOperation;
 import io.atomix.primitive.partition.PartitionId;
 import io.atomix.primitive.protocol.PrimitiveProtocol;
+import io.atomix.utils.Version;
 import io.atomix.utils.concurrent.Futures;
 
 import java.util.Collection;
@@ -60,6 +61,13 @@ public interface ProxyClient<S> {
    * @return The session state.
    */
   PrimitiveState getState();
+
+  /**
+   * Returns the current version of the client.
+   *
+   * @return the current version of the client
+   */
+  Version getVersion();
 
   /**
    * Returns the collection of all partition proxies.

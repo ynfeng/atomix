@@ -25,6 +25,7 @@ import io.atomix.primitive.operation.Operations;
 import io.atomix.primitive.operation.PrimitiveOperation;
 import io.atomix.primitive.proxy.ProxySession;
 import io.atomix.primitive.session.SessionClient;
+import io.atomix.utils.Version;
 import io.atomix.utils.concurrent.Futures;
 import io.atomix.utils.concurrent.ThreadContext;
 import io.atomix.utils.serializer.Serializer;
@@ -78,6 +79,11 @@ public class DefaultProxySession<S> implements ProxySession<S> {
   @Override
   public PrimitiveState getState() {
     return session.getState();
+  }
+
+  @Override
+  public Version getVersion() {
+    return session.getVersion();
   }
 
   @Override

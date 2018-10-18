@@ -18,6 +18,7 @@ package io.atomix.primitive.partition.impl;
 import io.atomix.cluster.ClusterMembershipService;
 import io.atomix.cluster.messaging.ClusterCommunicationService;
 import io.atomix.primitive.PrimitiveTypeRegistry;
+import io.atomix.primitive.partition.PartitionGroupMembershipService;
 import io.atomix.primitive.partition.PartitionManagementService;
 import io.atomix.primitive.partition.PrimaryElectionService;
 import io.atomix.primitive.session.SessionIdService;
@@ -27,6 +28,7 @@ import io.atomix.primitive.session.SessionIdService;
  */
 public class DefaultPartitionManagementService implements PartitionManagementService {
   private final ClusterMembershipService membershipService;
+  private final PartitionGroupMembershipService groupMembershipService;
   private final ClusterCommunicationService communicationService;
   private final PrimitiveTypeRegistry primitiveTypes;
   private final PrimaryElectionService electionService;
@@ -34,11 +36,13 @@ public class DefaultPartitionManagementService implements PartitionManagementSer
 
   public DefaultPartitionManagementService(
       ClusterMembershipService membershipService,
+      PartitionGroupMembershipService groupMembershipService,
       ClusterCommunicationService communicationService,
       PrimitiveTypeRegistry primitiveTypes,
       PrimaryElectionService electionService,
       SessionIdService sessionIdService) {
     this.membershipService = membershipService;
+    this.groupMembershipService = groupMembershipService;
     this.communicationService = communicationService;
     this.primitiveTypes = primitiveTypes;
     this.electionService = electionService;
@@ -48,6 +52,11 @@ public class DefaultPartitionManagementService implements PartitionManagementSer
   @Override
   public ClusterMembershipService getMembershipService() {
     return membershipService;
+  }
+
+  @Override
+  public PartitionGroupMembershipService getGroupMembershipService() {
+    return groupMembershipService;
   }
 
   @Override

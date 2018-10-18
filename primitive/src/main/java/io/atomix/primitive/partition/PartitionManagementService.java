@@ -33,6 +33,13 @@ public interface PartitionManagementService {
   ClusterMembershipService getMembershipService();
 
   /**
+   * Returns the partition group membership service.
+   *
+   * @return the partition group membership service
+   */
+  PartitionGroupMembershipService getGroupMembershipService();
+
+  /**
    * Returns the cluster messaging service.
    *
    * @return the cluster messaging service

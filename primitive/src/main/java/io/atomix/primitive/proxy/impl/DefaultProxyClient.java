@@ -26,17 +26,21 @@ import io.atomix.primitive.protocol.PrimitiveProtocol;
 import io.atomix.primitive.proxy.ProxyClient;
 import io.atomix.primitive.proxy.ProxySession;
 import io.atomix.primitive.session.SessionClient;
+import io.atomix.utils.Version;
 import io.atomix.utils.concurrent.Futures;
 import io.atomix.utils.serializer.Serializer;
 
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.function.BinaryOperator;
 import java.util.function.Consumer;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import static com.google.common.base.Preconditions.checkNotNull;
@@ -95,6 +99,14 @@ public class DefaultProxyClient<S> implements ProxyClient<S> {
   @Override
   public PrimitiveState getState() {
     return state;
+  }
+
+  @Override
+  public Version getVersion() {
+    return partitions.values().stream()
+        .map(ProxySession::getVersion)
+        .reduce(BinaryOperator.minBy(Comparator.comparing(Function.identity())))
+        .orElse(null);
   }
 
   @Override

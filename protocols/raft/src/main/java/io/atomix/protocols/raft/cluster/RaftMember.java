@@ -16,6 +16,7 @@
 package io.atomix.protocols.raft.cluster;
 
 import io.atomix.cluster.MemberId;
+import io.atomix.utils.Version;
 
 import java.time.Instant;
 import java.util.concurrent.CompletableFuture;
@@ -109,6 +110,13 @@ public interface RaftMember {
    * @return The member type.
    */
   Type getType();
+
+  /**
+   * Returns the member version.
+   *
+   * @return the member version
+   */
+  Version getVersion();
 
   /**
    * Adds a listener to be called when the member's type changes.

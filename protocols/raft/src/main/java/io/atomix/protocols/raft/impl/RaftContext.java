@@ -53,7 +53,6 @@ import io.atomix.storage.StorageException;
 import io.atomix.utils.concurrent.SingleThreadContext;
 import io.atomix.utils.concurrent.ThreadContext;
 import io.atomix.utils.concurrent.ThreadContextFactory;
-import io.atomix.utils.concurrent.ThreadModel;
 import io.atomix.utils.logging.ContextualLoggerFactory;
 import io.atomix.utils.logging.LoggerContext;
 import org.slf4j.Logger;
@@ -170,7 +169,7 @@ public class RaftContext implements AutoCloseable {
     // Create a new internal server state machine.
     this.stateMachine = new RaftServiceManager(this, stateContext, threadContextFactory);
 
-    this.cluster = new RaftClusterContext(localMemberId, this);
+    this.cluster = new RaftClusterContext(localMemberId, membershipService.getLocalMember().version(), this);
 
     // Register protocol listeners.
     registerHandlers(protocol);

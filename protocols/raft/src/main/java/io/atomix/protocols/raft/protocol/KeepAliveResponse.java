@@ -17,9 +17,10 @@ package io.atomix.protocols.raft.protocol;
 
 import io.atomix.cluster.MemberId;
 import io.atomix.protocols.raft.RaftError;
+import io.atomix.utils.Version;
 import io.atomix.utils.misc.ArraySizeHashPrinter;
 
-import java.util.Collection;
+import java.util.Map;
 import java.util.Objects;
 
 import static com.google.common.base.MoreObjects.toStringHelper;
@@ -45,10 +46,10 @@ public class KeepAliveResponse extends AbstractRaftResponse {
   }
 
   private final MemberId leader;
-  private final Collection<MemberId> members;
+  private final Map<MemberId, Version> members;
   private final long[] sessionIds;
 
-  public KeepAliveResponse(Status status, RaftError error, MemberId leader, Collection<MemberId> members, long[] sessionIds) {
+  public KeepAliveResponse(Status status, RaftError error, MemberId leader, Map<MemberId, Version> members, long[] sessionIds) {
     super(status, error);
     this.leader = leader;
     this.members = members;
@@ -69,7 +70,7 @@ public class KeepAliveResponse extends AbstractRaftResponse {
    *
    * @return The cluster members.
    */
-  public Collection<MemberId> members() {
+  public Map<MemberId, Version> members() {
     return members;
   }
 
@@ -122,7 +123,7 @@ public class KeepAliveResponse extends AbstractRaftResponse {
    */
   public static class Builder extends AbstractRaftResponse.Builder<Builder, KeepAliveResponse> {
     private MemberId leader;
-    private Collection<MemberId> members;
+    private Map<MemberId, Version> members;
     private long[] sessionIds;
 
     /**
@@ -143,7 +144,7 @@ public class KeepAliveResponse extends AbstractRaftResponse {
      * @return The response builder.
      * @throws NullPointerException if {@code members} is null
      */
-    public Builder withMembers(Collection<MemberId> members) {
+    public Builder withMembers(Map<MemberId, Version> members) {
       this.members = checkNotNull(members, "members cannot be null");
       return this;
     }

@@ -18,6 +18,7 @@ package io.atomix.protocols.backup;
 import io.atomix.cluster.ClusterMembershipService;
 import io.atomix.primitive.PrimitiveType;
 import io.atomix.primitive.Recovery;
+import io.atomix.primitive.partition.PartitionGroupMembershipService;
 import io.atomix.primitive.partition.PartitionId;
 import io.atomix.primitive.partition.PrimaryElection;
 import io.atomix.primitive.service.ServiceConfig;
@@ -61,6 +62,7 @@ public class PrimaryBackupClient {
   private final String clientName;
   private final PartitionId partitionId;
   private final ClusterMembershipService clusterMembershipService;
+  private final PartitionGroupMembershipService groupMembershipService;
   private final PrimaryBackupClientProtocol protocol;
   private final PrimaryElection primaryElection;
   private final SessionIdService sessionIdService;
@@ -72,6 +74,7 @@ public class PrimaryBackupClient {
       String clientName,
       PartitionId partitionId,
       ClusterMembershipService clusterMembershipService,
+      PartitionGroupMembershipService groupMembershipService,
       PrimaryBackupClientProtocol protocol,
       PrimaryElection primaryElection,
       SessionIdService sessionIdService,
@@ -80,6 +83,7 @@ public class PrimaryBackupClient {
     this.clientName = clientName;
     this.partitionId = partitionId;
     this.clusterMembershipService = clusterMembershipService;
+    this.groupMembershipService = groupMembershipService;
     this.protocol = protocol;
     this.primaryElection = primaryElection;
     this.sessionIdService = sessionIdService;
@@ -114,6 +118,7 @@ public class PrimaryBackupClient {
                     numBackups,
                     replication),
                 clusterMembershipService,
+                groupMembershipService,
                 PrimaryBackupClient.this.protocol,
                 primaryElection,
                 threadContextFactory.createContext()));
@@ -165,6 +170,7 @@ public class PrimaryBackupClient {
     protected String clientName = "atomix";
     protected PartitionId partitionId;
     protected ClusterMembershipService clusterMembershipService;
+    protected PartitionGroupMembershipService groupMembershipService;
     protected PrimaryBackupClientProtocol protocol;
     protected PrimaryElection primaryElection;
     protected SessionIdService sessionIdService;
@@ -203,6 +209,17 @@ public class PrimaryBackupClient {
      */
     public Builder withMembershipService(ClusterMembershipService membershipService) {
       this.clusterMembershipService = checkNotNull(membershipService, "membershipService cannot be null");
+      return this;
+    }
+
+    /**
+     * Sets the partition group membership service.
+     *
+     * @param groupMembershipService the partition group membership service
+     * @return the client builder
+     */
+    public Builder withGroupMembershipService(PartitionGroupMembershipService groupMembershipService) {
+      this.groupMembershipService = checkNotNull(groupMembershipService, "groupMembershipService cannot be null");
       return this;
     }
 
@@ -297,6 +314,7 @@ public class PrimaryBackupClient {
           clientName,
           partitionId,
           clusterMembershipService,
+          groupMembershipService,
           protocol,
           primaryElection,
           sessionIdService,

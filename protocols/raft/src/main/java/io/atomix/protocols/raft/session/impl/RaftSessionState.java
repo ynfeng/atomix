@@ -18,6 +18,7 @@ package io.atomix.protocols.raft.session.impl;
 import io.atomix.primitive.PrimitiveState;
 import io.atomix.primitive.PrimitiveType;
 import io.atomix.primitive.session.SessionId;
+import io.atomix.utils.Version;
 
 import java.util.Set;
 import java.util.concurrent.CopyOnWriteArraySet;
@@ -35,6 +36,7 @@ public final class RaftSessionState {
   private final PrimitiveType primitiveType;
   private final long timeout;
   private volatile PrimitiveState state = PrimitiveState.CONNECTED;
+  private volatile Version version;
   private volatile Long suspendedTime;
   private volatile long commandRequest;
   private volatile long commandResponse;
@@ -129,6 +131,24 @@ public final class RaftSessionState {
         setState(PrimitiveState.EXPIRED);
       }
     }
+  }
+
+  /**
+   * Returns the client version.
+   *
+   * @return the client version
+   */
+  public Version getVersion() {
+    return version;
+  }
+
+  /**
+   * Sets the client version.
+   *
+   * @param version the client version
+   */
+  public void setVersion(Version version) {
+
   }
 
   /**

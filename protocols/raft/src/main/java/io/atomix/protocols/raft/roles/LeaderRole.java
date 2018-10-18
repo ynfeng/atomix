@@ -16,6 +16,7 @@
 package io.atomix.protocols.raft.roles;
 
 import com.google.common.base.Throwables;
+import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 import io.atomix.cluster.ClusterMembershipEvent;
 import io.atomix.cluster.ClusterMembershipEventListener;
@@ -305,7 +306,7 @@ public final class LeaderRole extends ActiveRole {
     // Add the joining member to the members list. If the joining member's type is ACTIVE, join the member in the
     // PROMOTABLE state to allow it to get caught up without impacting the quorum size.
     Collection<RaftMember> members = raft.getCluster().getMembers();
-    members.add(new DefaultRaftMember(member.memberId(), member.getType(), Instant.now()));
+    members.add(new DefaultRaftMember(member.memberId(), member.getType(), member.getVersion(), Instant.now()));
 
     CompletableFuture<JoinResponse> future = new CompletableFuture<>();
     configure(members).whenComplete((index, error) -> {
@@ -374,7 +375,7 @@ public final class LeaderRole extends ActiveRole {
     }
 
     // Update the member type.
-    existingMember.update(request.member().getType(), Instant.now());
+    existingMember.update(request.member().getType(), request.member().getVersion(), Instant.now());
 
     Collection<RaftMember> members = raft.getCluster().getMembers();
 
@@ -934,10 +935,8 @@ public final class LeaderRole extends ActiveRole {
                     future.complete(logResponse(KeepAliveResponse.builder()
                         .withStatus(RaftResponse.Status.OK)
                         .withLeader(raft.getCluster().getMember().memberId())
-                        .withMembers(raft.getCluster().getMembers().stream()
-                            .map(RaftMember::memberId)
-                            .filter(m -> m != null)
-                            .collect(Collectors.toList()))
+                        .withMembers(Maps.newHashMap(raft.getCluster().getMembers().stream()
+                            .collect(Collectors.toMap(m -> m.memberId(), m -> m.getVersion()))))
                         .withSessionIds(sessionResult)
                         .build()));
                   } else if (sessionError instanceof CompletionException && sessionError.getCause() instanceof RaftException) {

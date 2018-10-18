@@ -34,6 +34,7 @@ import io.atomix.protocols.raft.protocol.OpenSessionRequest;
 import io.atomix.protocols.raft.protocol.RaftClientProtocol;
 import io.atomix.protocols.raft.protocol.RaftResponse;
 import io.atomix.protocols.raft.session.CommunicationStrategy;
+import io.atomix.utils.Version;
 import io.atomix.utils.concurrent.Futures;
 import io.atomix.utils.concurrent.Scheduled;
 import io.atomix.utils.concurrent.ThreadContext;
@@ -45,6 +46,7 @@ import org.slf4j.Logger;
 
 import java.time.Duration;
 import java.util.Collection;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -52,6 +54,8 @@ import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.function.BinaryOperator;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import static com.google.common.base.MoreObjects.toStringHelper;
@@ -358,11 +362,18 @@ public class RaftSessionManager {
         if (error == null) {
           // If the request was successful, update the address selector and schedule the next keep-alive.
           if (response.status() == RaftResponse.Status.OK) {
-            selectorManager.resetAll(response.leader(), response.members());
+            selectorManager.resetAll(response.leader(), response.members().keySet());
+
+            // Compute the cluster version from the member versions.
+            Version version = response.members().values()
+                .stream()
+                .reduce(BinaryOperator.minBy(Comparator.comparing(Function.identity())))
+                .orElse(null);
 
             // Iterate through sessions and close sessions that weren't kept alive by the request (have already been closed).
             Set<Long> keptAliveSessions = Sets.newHashSet(Longs.asList(response.sessionIds()));
             for (RaftSessionState session : needKeepAlive) {
+              session.setVersion(version);
               if (keptAliveSessions.contains(session.getSessionId().id())) {
                 session.setState(PrimitiveState.CONNECTED);
               } else {
