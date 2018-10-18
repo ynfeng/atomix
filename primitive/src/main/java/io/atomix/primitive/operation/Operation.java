@@ -37,4 +37,9 @@ public @interface Operation {
    */
   OperationType type() default OperationType.COMMAND;
 
+  /**
+   * The version in which the operation was introduced. This is used to determine compatibility.
+   */
+  String since() default "";
+
 }
