@@ -20,12 +20,14 @@ import io.atomix.cluster.MemberId;
 import io.atomix.primitive.PrimitiveException;
 import io.atomix.primitive.PrimitiveId;
 import io.atomix.primitive.PrimitiveType;
+import io.atomix.primitive.operation.MethodInfo;
 import io.atomix.primitive.operation.OperationId;
 import io.atomix.primitive.operation.Operations;
 import io.atomix.primitive.service.impl.DefaultServiceExecutor;
 import io.atomix.primitive.session.Session;
 import io.atomix.primitive.session.SessionId;
 import io.atomix.primitive.session.impl.ClientSession;
+import io.atomix.utils.Version;
 import io.atomix.utils.concurrent.Scheduler;
 import io.atomix.utils.logging.ContextualLoggerFactory;
 import io.atomix.utils.logging.LoggerContext;
@@ -123,53 +125,71 @@ public abstract class AbstractPrimitiveService<C> implements PrimitiveService {
    * @param executor The state machine executor.
    */
   protected void configure(ServiceExecutor executor) {
-    Operations.getOperationMap(getClass()).forEach(((operationId, method) -> configure(operationId, method, executor)));
+    Operations.getOperationMethodInfo(getClass()).forEach((operationId, methodInfo) -> configure(methodInfo, executor));
   }
 
   /**
    * Configures the given operation on the given executor.
    *
-   * @param operationId the operation identifier
-   * @param method      the operation method
+   * @param methodInfo the method info
    * @param executor    the service executor
    */
-  private void configure(OperationId operationId, Method method, ServiceExecutor executor) {
-    if (method.getReturnType() == Void.TYPE) {
-      if (method.getParameterTypes().length == 0) {
-        executor.register(operationId, () -> {
+  private void configure(MethodInfo methodInfo, ServiceExecutor executor) {
+    if (methodInfo.method().getReturnType() == Void.TYPE) {
+      if (methodInfo.method().getParameterTypes().length == 0) {
+        executor.register(methodInfo.operationId(), () -> {
+          checkVersion(methodInfo);
           try {
-            method.invoke(this);
+            methodInfo.method().invoke(this);
           } catch (IllegalAccessException | InvocationTargetException e) {
             throw new PrimitiveException.ServiceException(e);
           }
         });
       } else {
-        executor.register(operationId, args -> {
+        executor.register(methodInfo.operationId(), args -> {
+          checkVersion(methodInfo);
           try {
-            method.invoke(this, (Object[]) args.value());
+            methodInfo.method().invoke(this, (Object[]) args.value());
           } catch (IllegalAccessException | InvocationTargetException e) {
             throw new PrimitiveException.ServiceException(e);
           }
         });
       }
     } else {
-      if (method.getParameterTypes().length == 0) {
-        executor.register(operationId, () -> {
+      if (methodInfo.method().getParameterTypes().length == 0) {
+        executor.register(methodInfo.operationId(), () -> {
+          checkVersion(methodInfo);
           try {
-            return method.invoke(this);
+            return methodInfo.method().invoke(this);
           } catch (IllegalAccessException | InvocationTargetException e) {
             throw new PrimitiveException.ServiceException(e);
           }
         });
       } else {
-        executor.register(operationId, args -> {
+        executor.register(methodInfo.operationId(), args -> {
+          checkVersion(methodInfo);
           try {
-            return method.invoke(this, (Object[]) args.value());
+            return methodInfo.method().invoke(this, (Object[]) args.value());
           } catch (IllegalAccessException | InvocationTargetException e) {
             throw new PrimitiveException.ServiceException(e);
           }
         });
       }
+    }
+  }
+
+  /**
+   * Checks that the version of the given method is compatible with the current context version.
+   *
+   * @param methodInfo the method info
+   */
+  private void checkVersion(MethodInfo methodInfo) {
+    Version currentVersion = context.currentVersion();
+    Version operationVersion = methodInfo.version();
+    if (currentVersion != null && operationVersion != null && currentVersion.compareTo(operationVersion) < 0) {
+      throw new PrimitiveException.ServiceException(
+          "Cluster version " + currentVersion + " does not support operation " + methodInfo.operationId().id()
+              + " with version " + operationVersion);
     }
   }
 

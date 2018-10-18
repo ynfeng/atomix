@@ -48,7 +48,9 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.CopyOnWriteArraySet;
+import java.util.function.BinaryOperator;
 import java.util.function.Consumer;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import static com.google.common.base.MoreObjects.toStringHelper;
@@ -62,6 +64,7 @@ public final class RaftClusterContext implements RaftCluster, AutoCloseable {
   private final RaftContext raft;
   private final DefaultRaftMember member;
   private volatile Configuration configuration;
+  private volatile Version version;
   private final Map<MemberId, RaftMemberContext> membersMap = new ConcurrentHashMap<>();
   private final Set<RaftMember> members = new CopyOnWriteArraySet<>();
   private final List<RaftMemberContext> remoteMembers = new CopyOnWriteArrayList<>();
@@ -175,6 +178,15 @@ public final class RaftClusterContext implements RaftCluster, AutoCloseable {
   @Override
   public void removeListener(RaftClusterEventListener listener) {
     listeners.remove(listener);
+  }
+
+  /**
+   * Returns the Raft cluster version.
+   *
+   * @return the Raft cluster version
+   */
+  public Version getVersion() {
+    return version;
   }
 
   /**
@@ -653,6 +665,10 @@ public final class RaftClusterContext implements RaftCluster, AutoCloseable {
     }
 
     this.configuration = configuration;
+    this.version = members.stream()
+        .map(RaftMember::getVersion)
+        .reduce(BinaryOperator.minBy(Comparator.comparing(Function.identity())))
+        .orElse(null);
 
     // Store the configuration if it's already committed.
     if (raft.getCommitIndex() >= configuration.index()) {

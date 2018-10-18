@@ -39,6 +39,7 @@ import io.atomix.protocols.raft.session.RaftSessionRegistry;
 import io.atomix.protocols.raft.storage.snapshot.SnapshotReader;
 import io.atomix.protocols.raft.storage.snapshot.SnapshotWriter;
 import io.atomix.storage.buffer.Bytes;
+import io.atomix.utils.Version;
 import io.atomix.utils.concurrent.ThreadContextFactory;
 import io.atomix.utils.config.ConfigurationException;
 import io.atomix.utils.logging.ContextualLoggerFactory;
@@ -162,6 +163,11 @@ public class RaftServiceContext implements ServiceContext {
   @Override
   public OperationType currentOperation() {
     return currentOperation;
+  }
+
+  @Override
+  public Version currentVersion() {
+    return raft.getCluster().getVersion();
   }
 
   @Override

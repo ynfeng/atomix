@@ -51,6 +51,7 @@ import io.atomix.protocols.backup.roles.BackupRole;
 import io.atomix.protocols.backup.roles.NoneRole;
 import io.atomix.protocols.backup.roles.PrimaryBackupRole;
 import io.atomix.protocols.backup.roles.PrimaryRole;
+import io.atomix.utils.Version;
 import io.atomix.utils.concurrent.ComposableFuture;
 import io.atomix.utils.concurrent.ThreadContext;
 import io.atomix.utils.logging.ContextualLoggerFactory;
@@ -227,6 +228,12 @@ public class PrimaryBackupServiceContext implements ServiceContext {
   @Override
   public Session currentSession() {
     return currentSession;
+  }
+
+  @Override
+  public Version currentVersion() {
+    // TODO: Support server-side version checks for primary-backup
+    return null;
   }
 
   /**

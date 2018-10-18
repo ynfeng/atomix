@@ -22,6 +22,7 @@ import io.atomix.primitive.PrimitiveType;
 import io.atomix.primitive.operation.OperationType;
 import io.atomix.primitive.session.Session;
 import io.atomix.primitive.session.Sessions;
+import io.atomix.utils.Version;
 import io.atomix.utils.time.LogicalClock;
 import io.atomix.utils.time.WallClock;
 
@@ -94,6 +95,13 @@ public interface ServiceContext {
    * @return the current operation type
    */
   OperationType currentOperation();
+
+  /**
+   * Returns the currently active Atomix version.
+   *
+   * @return the currently active Atomix version
+   */
+  Version currentVersion();
 
   /**
    * Returns the state machine's logical clock.

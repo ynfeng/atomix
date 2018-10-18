@@ -126,7 +126,6 @@ public final class Operations {
    * @param serviceInterface the service interface
    * @return the operations provided by the given service interface
    */
-  @Deprecated
   public static Map<OperationId, MethodInfo> getOperationMethodInfo(Class<?> serviceInterface) {
     if (!serviceInterface.isInterface()) {
       Class type = serviceInterface;
