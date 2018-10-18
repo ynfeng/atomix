@@ -21,6 +21,7 @@ import io.atomix.primitive.PrimitiveState;
 import io.atomix.primitive.PrimitiveType;
 import io.atomix.primitive.event.Events;
 import io.atomix.primitive.operation.OperationId;
+import io.atomix.primitive.operation.OperationInfo;
 import io.atomix.primitive.operation.Operations;
 import io.atomix.primitive.operation.PrimitiveOperation;
 import io.atomix.primitive.proxy.ProxySession;
@@ -221,19 +222,28 @@ public class DefaultProxySession<S> implements ProxySession<S> {
    */
   private class ServiceProxyHandler implements InvocationHandler {
     private final ThreadLocal<CompletableFuture> future = new ThreadLocal<>();
-    private final Map<Method, OperationId> operations = new ConcurrentHashMap<>();
+    private final Map<Method, OperationInfo> operations = new ConcurrentHashMap<>();
 
     private ServiceProxyHandler(Class<?> type) {
-      this.operations.putAll(Operations.getMethodMap(type));
+      this.operations.putAll(Operations.getMethodOperationInfo(type));
     }
 
     @Override
     public Object invoke(Object object, Method method, Object[] args) throws Throwable {
-      OperationId operationId = operations.get(method);
-      if (operationId != null) {
-        future.set(connect()
-            .thenCompose(v -> session.execute(PrimitiveOperation.operation(operationId, encode(args))))
-            .thenApply(DefaultProxySession.this::decode));
+      OperationInfo operationInfo = operations.get(method);
+      if (operationInfo != null) {
+        Version clientVersion = getVersion();
+        Version operationVersion = operationInfo.version();
+        if (clientVersion != null && operationVersion != null && clientVersion.compareTo(operationVersion) < 0) {
+          future.set(Futures.exceptionalFuture(
+              new UnsupportedOperationException(
+                  "Client version " + clientVersion + " does not support operation " + operationInfo.operationId().id()
+                      + " with version " + operationVersion)));
+        } else {
+          future.set(connect()
+              .thenCompose(v -> session.execute(PrimitiveOperation.operation(operationInfo.operationId(), encode(args))))
+              .thenApply(DefaultProxySession.this::decode));
+        }
       } else {
         throw new PrimitiveException("Unknown primitive operation: " + method.getName());
       }
