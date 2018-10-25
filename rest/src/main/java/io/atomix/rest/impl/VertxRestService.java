@@ -27,6 +27,7 @@ import io.atomix.core.PrimitivesService;
 import io.atomix.primitive.PrimitiveFactory;
 import io.atomix.primitive.config.PrimitiveConfig;
 import io.atomix.primitive.partition.PartitionGroupConfig;
+import io.atomix.primitive.partition.PartitionService;
 import io.atomix.primitive.protocol.PrimitiveProtocolConfig;
 import io.atomix.rest.AtomixResource;
 import io.atomix.rest.ManagedRestService;
@@ -88,6 +89,8 @@ public class VertxRestService implements ManagedRestService {
         .put(ClusterCommunicationService.class, atomix.getCommunicationService());
     deployment.getDispatcher().getDefaultContextObjects()
         .put(ClusterEventService.class, atomix.getEventService());
+    deployment.getDispatcher().getDefaultContextObjects()
+        .put(PartitionService.class, atomix.getPartitionService());
     deployment.getDispatcher().getDefaultContextObjects()
         .put(PrimitiveFactory.class, atomix.getPrimitivesService());
     deployment.getDispatcher().getDefaultContextObjects()
