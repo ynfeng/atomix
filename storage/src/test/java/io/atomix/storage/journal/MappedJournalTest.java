@@ -13,17 +13,20 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.atomix.protocols.raft.storage.log;
+package io.atomix.storage.journal;
 
-import io.atomix.protocols.raft.storage.log.entry.RaftLogEntry;
-import io.atomix.storage.journal.DelegatingJournalWriter;
-import io.atomix.storage.journal.SegmentedJournalWriter;
+import io.atomix.storage.StorageLevel;
 
 /**
- * Raft log writer.
+ * Memory mapped journal test.
  */
-public class RaftLogWriter extends DelegatingJournalWriter<RaftLogEntry> {
-  public RaftLogWriter(SegmentedJournalWriter<RaftLogEntry> writer, RaftLog log) {
-    super(writer);
+public class MappedJournalTest extends PersistentJournalTest {
+  public MappedJournalTest(int maxSegmentSize, int cacheSize) {
+    super(maxSegmentSize, cacheSize);
+  }
+
+  @Override
+  protected StorageLevel storageLevel() {
+    return StorageLevel.MAPPED;
   }
 }
