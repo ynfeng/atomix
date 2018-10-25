@@ -15,7 +15,6 @@
  */
 package io.atomix.protocols.raft.storage;
 
-import io.atomix.protocols.raft.storage.log.RaftLog;
 import io.atomix.protocols.raft.storage.log.entry.RaftLogEntry;
 import io.atomix.protocols.raft.storage.snapshot.SnapshotFile;
 import io.atomix.protocols.raft.storage.snapshot.SnapshotStore;
@@ -23,8 +22,10 @@ import io.atomix.protocols.raft.storage.system.MetaStore;
 import io.atomix.storage.StorageException;
 import io.atomix.storage.StorageLevel;
 import io.atomix.storage.buffer.FileBuffer;
+import io.atomix.storage.journal.Journal;
 import io.atomix.storage.journal.JournalSegmentDescriptor;
 import io.atomix.storage.journal.JournalSegmentFile;
+import io.atomix.storage.journal.SegmentedJournal;
 import io.atomix.storage.statistics.StorageStatistics;
 import io.atomix.utils.serializer.Namespace;
 import io.atomix.utils.serializer.Serializer;
@@ -39,9 +40,9 @@ import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
 
 /**
- * Immutable log configuration and {@link RaftLog} factory.
+ * Immutable log configuration and {@link Journal} factory.
  * <p>
- * This class provides a factory for {@link RaftLog} objects. {@code Storage} objects are immutable and
+ * This class provides a factory for {@link Journal} objects. {@code Storage} objects are immutable and
  * can be created only via the {@link RaftStorage.Builder}. To create a new
  * {@code Storage.Builder}, use the static {@link #builder()} factory method:
  * <pre>
@@ -53,7 +54,7 @@ import static com.google.common.base.Preconditions.checkNotNull;
  *   }
  * </pre>
  *
- * @see RaftLog
+ * @see Journal
  */
 public class RaftStorage {
 
@@ -130,7 +131,7 @@ public class RaftStorage {
   /**
    * Returns the storage directory.
    * <p>
-   * The storage directory is the directory to which all {@link RaftLog}s write files. Segment files
+   * The storage directory is the directory to which all {@link Journal}s write files. Segment files
    * for multiple logs may be stored in the storage directory, and files for each log instance will be identified
    * by the {@code name} provided when the log is {@link #openLog() opened}.
    *
@@ -143,7 +144,7 @@ public class RaftStorage {
   /**
    * Returns the storage level.
    * <p>
-   * The storage level dictates how entries within individual log {@link RaftLog}s should be stored.
+   * The storage level dictates how entries within individual log {@link Journal}s should be stored.
    *
    * @return The storage level.
    */
@@ -154,7 +155,7 @@ public class RaftStorage {
   /**
    * Returns the maximum log segment size.
    * <p>
-   * The maximum segment size dictates the maximum size any segment in a {@link RaftLog} may consume
+   * The maximum segment size dictates the maximum size any segment in a {@link Journal} may consume
    * in bytes.
    *
    * @return The maximum segment size in bytes.
@@ -167,7 +168,7 @@ public class RaftStorage {
    * Returns the maximum number of entries per segment.
    * <p>
    * The maximum entries per segment dictates the maximum number of {@link RaftLogEntry entries}
-   * that are allowed to be stored in any segment in a {@link RaftLog}.
+   * that are allowed to be stored in any segment in a {@link Journal}.
    *
    * @return The maximum number of entries per segment.
    * @deprecated since 3.0.2
@@ -313,7 +314,7 @@ public class RaftStorage {
   }
 
   /**
-   * Opens a new {@link RaftLog}, recovering the log from disk if it exists.
+   * Opens a new {@link Journal}, recovering the log from disk if it exists.
    * <p>
    * When a log is opened, the log will attempt to load segments from the storage {@link #directory()}
    * according to the provided log {@code name}. If segments for the given log name are present on disk, segments
@@ -323,8 +324,8 @@ public class RaftStorage {
    *
    * @return The opened log.
    */
-  public RaftLog openLog() {
-    return RaftLog.builder()
+  public SegmentedJournal<RaftLogEntry> openLog() {
+    return SegmentedJournal.<RaftLogEntry>builder()
         .withName(prefix)
         .withDirectory(directory)
         .withStorageLevel(storageLevel)
@@ -337,7 +338,7 @@ public class RaftStorage {
   }
 
   /**
-   * Deletes a {@link RaftLog} from disk.
+   * Deletes a {@link Journal} from disk.
    * <p>
    * The log will be deleted by simply reading {@code log} file names from disk and deleting log files directly.
    * Deleting log files does not involve rebuilding indexes or reading any logs into memory.

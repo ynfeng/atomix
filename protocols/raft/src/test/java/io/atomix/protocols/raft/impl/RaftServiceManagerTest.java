@@ -38,8 +38,6 @@ import io.atomix.protocols.raft.cluster.RaftMember;
 import io.atomix.protocols.raft.cluster.impl.DefaultRaftMember;
 import io.atomix.protocols.raft.protocol.RaftServerProtocol;
 import io.atomix.protocols.raft.storage.RaftStorage;
-import io.atomix.protocols.raft.storage.log.RaftLogWriter;
-import io.atomix.protocols.raft.storage.log.TestEntry;
 import io.atomix.protocols.raft.storage.log.entry.CloseSessionEntry;
 import io.atomix.protocols.raft.storage.log.entry.CommandEntry;
 import io.atomix.protocols.raft.storage.log.entry.ConfigurationEntry;
@@ -48,7 +46,9 @@ import io.atomix.protocols.raft.storage.log.entry.KeepAliveEntry;
 import io.atomix.protocols.raft.storage.log.entry.MetadataEntry;
 import io.atomix.protocols.raft.storage.log.entry.OpenSessionEntry;
 import io.atomix.protocols.raft.storage.log.entry.QueryEntry;
+import io.atomix.protocols.raft.storage.log.entry.RaftLogEntry;
 import io.atomix.protocols.raft.storage.snapshot.Snapshot;
+import io.atomix.storage.journal.JournalWriter;
 import io.atomix.utils.concurrent.ThreadModel;
 import io.atomix.utils.serializer.Namespace;
 import org.junit.After;
@@ -89,7 +89,6 @@ public class RaftServiceManagerTest {
       .register(MetadataEntry.class)
       .register(OpenSessionEntry.class)
       .register(QueryEntry.class)
-      .register(TestEntry.class)
       .register(ArrayList.class)
       .register(HashSet.class)
       .register(DefaultRaftMember.class)
@@ -109,7 +108,7 @@ public class RaftServiceManagerTest {
 
   @Test
   public void testSnapshotTakeInstall() throws Exception {
-    RaftLogWriter writer = raft.getLogWriter();
+    JournalWriter<RaftLogEntry> writer = raft.getLogWriter();
     writer.append(new InitializeEntry(1, System.currentTimeMillis()));
     writer.append(new OpenSessionEntry(
         1,
@@ -141,7 +140,7 @@ public class RaftServiceManagerTest {
 
   @Test
   public void testInstallSnapshotOnApply() throws Exception {
-    RaftLogWriter writer = raft.getLogWriter();
+    JournalWriter<RaftLogEntry> writer = raft.getLogWriter();
     writer.append(new InitializeEntry(1, System.currentTimeMillis()));
     writer.append(new OpenSessionEntry(
         1,

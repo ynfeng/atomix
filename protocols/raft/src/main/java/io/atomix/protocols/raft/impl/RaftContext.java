@@ -43,17 +43,18 @@ import io.atomix.protocols.raft.roles.PromotableRole;
 import io.atomix.protocols.raft.roles.RaftRole;
 import io.atomix.protocols.raft.session.RaftSessionRegistry;
 import io.atomix.protocols.raft.storage.RaftStorage;
-import io.atomix.protocols.raft.storage.log.RaftLog;
-import io.atomix.protocols.raft.storage.log.RaftLogReader;
-import io.atomix.protocols.raft.storage.log.RaftLogWriter;
+import io.atomix.protocols.raft.storage.log.entry.RaftLogEntry;
 import io.atomix.protocols.raft.storage.snapshot.SnapshotStore;
 import io.atomix.protocols.raft.storage.system.MetaStore;
 import io.atomix.protocols.raft.utils.LoadMonitor;
 import io.atomix.storage.StorageException;
+import io.atomix.storage.journal.Journal;
+import io.atomix.storage.journal.JournalReader;
+import io.atomix.storage.journal.JournalWriter;
+import io.atomix.storage.journal.SegmentedJournal;
 import io.atomix.utils.concurrent.SingleThreadContext;
 import io.atomix.utils.concurrent.ThreadContext;
 import io.atomix.utils.concurrent.ThreadContextFactory;
-import io.atomix.utils.concurrent.ThreadModel;
 import io.atomix.utils.logging.ContextualLoggerFactory;
 import io.atomix.utils.logging.LoggerContext;
 import org.slf4j.Logger;
@@ -98,9 +99,9 @@ public class RaftContext implements AutoCloseable {
   private final LoadMonitor loadMonitor;
   private volatile State state = State.ACTIVE;
   private final MetaStore meta;
-  private final RaftLog raftLog;
-  private final RaftLogWriter logWriter;
-  private final RaftLogReader logReader;
+  private final SegmentedJournal<RaftLogEntry> raftLog;
+  private final JournalWriter<RaftLogEntry> logWriter;
+  private final JournalReader<RaftLogEntry> logReader;
   private final SnapshotStore snapshotStore;
   private final RaftServiceManager stateMachine;
   private final ThreadContextFactory threadContextFactory;
@@ -162,7 +163,7 @@ public class RaftContext implements AutoCloseable {
     // Construct the core log, reader, writer, and compactor.
     this.raftLog = storage.openLog();
     this.logWriter = raftLog.writer();
-    this.logReader = raftLog.openReader(1, RaftLogReader.Mode.ALL);
+    this.logReader = raftLog.openReader(1, JournalReader.Mode.ALL);
 
     // Open the snapshot store.
     this.snapshotStore = storage.openSnapshotStore();
@@ -626,7 +627,7 @@ public class RaftContext implements AutoCloseable {
    *
    * @return The server log.
    */
-  public RaftLog getLog() {
+  public SegmentedJournal<RaftLogEntry> getLog() {
     return raftLog;
   }
 
@@ -635,7 +636,7 @@ public class RaftContext implements AutoCloseable {
    *
    * @return The log writer.
    */
-  public RaftLogWriter getLogWriter() {
+  public JournalWriter<RaftLogEntry> getLogWriter() {
     return logWriter;
   }
 
@@ -644,7 +645,7 @@ public class RaftContext implements AutoCloseable {
    *
    * @return The log reader.
    */
-  public RaftLogReader getLogReader() {
+  public JournalReader<RaftLogEntry> getLogReader() {
     return logReader;
   }
 
