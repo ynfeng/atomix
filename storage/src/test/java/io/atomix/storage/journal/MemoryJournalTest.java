@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-present Open Networking Foundation
+ * Copyright 2017-present Open Networking Foundation
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,20 +13,20 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.atomix.storage.buffer;
+package io.atomix.storage.journal;
 
-import io.atomix.utils.concurrent.ReferenceFactory;
-import io.atomix.utils.concurrent.ReferencePool;
+import io.atomix.storage.StorageLevel;
 
 /**
- * Buffer pool.
- *
- * @author <a href="http://github.com/kuujo">Jordan Halterman</a>
+ * Memory journal test.
  */
-public class BufferPool extends ReferencePool<Buffer> {
-
-  public BufferPool(ReferenceFactory<Buffer> factory) {
-    super(factory);
+public class MemoryJournalTest extends AbstractJournalTest {
+  public MemoryJournalTest(int maxSegmentSize, int cacheSize) {
+    super(maxSegmentSize, cacheSize);
   }
 
+  @Override
+  protected StorageLevel storageLevel() {
+    return StorageLevel.MEMORY;
+  }
 }

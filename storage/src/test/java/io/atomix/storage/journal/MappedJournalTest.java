@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-present Open Networking Foundation
+ * Copyright 2017-present Open Networking Foundation
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,30 +13,20 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.atomix.storage.buffer;
+package io.atomix.storage.journal;
+
+import io.atomix.storage.StorageLevel;
 
 /**
- * Unpooled buffer allocator.
- *
- * @author <a href="http://github.com/kuujo">Jordan Halterman</a>
+ * Memory mapped journal test.
  */
-public abstract class UnpooledAllocator implements BufferAllocator {
-
-  /**
-   * Returns the maximum buffer capacity.
-   *
-   * @return The maximum buffer capacity.
-   */
-  protected abstract int maxCapacity();
-
-  @Override
-  public Buffer allocate() {
-    return allocate(4096, maxCapacity());
+public class MappedJournalTest extends PersistentJournalTest {
+  public MappedJournalTest(int maxSegmentSize, int cacheSize) {
+    super(maxSegmentSize, cacheSize);
   }
 
   @Override
-  public Buffer allocate(int capacity) {
-    return allocate(capacity, capacity);
+  protected StorageLevel storageLevel() {
+    return StorageLevel.MAPPED;
   }
-
 }
