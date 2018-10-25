@@ -15,12 +15,10 @@
  */
 package io.atomix.protocols.raft.storage.log.entry;
 
-import io.atomix.protocols.raft.storage.log.RaftLog;
-
 import static com.google.common.base.MoreObjects.toStringHelper;
 
 /**
- * Stores a state change in a {@link RaftLog}.
+ * Stores a state change in a {@link io.atomix.storage.journal.Journal}.
  */
 public abstract class RaftLogEntry {
   protected final long term;

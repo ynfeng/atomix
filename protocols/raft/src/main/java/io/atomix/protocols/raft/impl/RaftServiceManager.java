@@ -28,8 +28,6 @@ import io.atomix.protocols.raft.RaftException;
 import io.atomix.protocols.raft.RaftServer;
 import io.atomix.protocols.raft.service.RaftServiceContext;
 import io.atomix.protocols.raft.session.RaftSession;
-import io.atomix.protocols.raft.storage.log.RaftLog;
-import io.atomix.protocols.raft.storage.log.RaftLogReader;
 import io.atomix.protocols.raft.storage.log.entry.CloseSessionEntry;
 import io.atomix.protocols.raft.storage.log.entry.CommandEntry;
 import io.atomix.protocols.raft.storage.log.entry.ConfigurationEntry;
@@ -44,6 +42,8 @@ import io.atomix.protocols.raft.storage.snapshot.SnapshotReader;
 import io.atomix.protocols.raft.storage.snapshot.SnapshotWriter;
 import io.atomix.storage.StorageLevel;
 import io.atomix.storage.journal.Indexed;
+import io.atomix.storage.journal.Journal;
+import io.atomix.storage.journal.JournalReader;
 import io.atomix.utils.concurrent.ComposableFuture;
 import io.atomix.utils.concurrent.Futures;
 import io.atomix.utils.concurrent.OrderedFuture;
@@ -83,8 +83,8 @@ public class RaftServiceManager implements AutoCloseable {
   private final RaftContext raft;
   private final ThreadContext stateContext;
   private final ThreadContextFactory threadContextFactory;
-  private final RaftLog log;
-  private final RaftLogReader reader;
+  private final Journal<RaftLogEntry> log;
+  private final JournalReader<RaftLogEntry> reader;
   private final Map<Long, CompletableFuture> futures = Maps.newHashMap();
   private volatile CompletableFuture<Void> compactFuture;
   private long lastEnqueued;
@@ -93,7 +93,7 @@ public class RaftServiceManager implements AutoCloseable {
   public RaftServiceManager(RaftContext raft, ThreadContext stateContext, ThreadContextFactory threadContextFactory) {
     this.raft = checkNotNull(raft, "state cannot be null");
     this.log = raft.getLog();
-    this.reader = log.openReader(1, RaftLogReader.Mode.COMMITS);
+    this.reader = log.openReader(1, JournalReader.Mode.COMMITS);
     this.stateContext = stateContext;
     this.threadContextFactory = threadContextFactory;
     this.logger = ContextualLoggerFactory.getLogger(getClass(), LoggerContext.builder(RaftServer.class)

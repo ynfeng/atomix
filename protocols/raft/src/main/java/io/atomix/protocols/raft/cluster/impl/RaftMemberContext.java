@@ -15,8 +15,9 @@
  */
 package io.atomix.protocols.raft.cluster.impl;
 
-import io.atomix.protocols.raft.storage.log.RaftLog;
-import io.atomix.protocols.raft.storage.log.RaftLogReader;
+import io.atomix.protocols.raft.storage.log.entry.RaftLogEntry;
+import io.atomix.storage.journal.Journal;
+import io.atomix.storage.journal.JournalReader;
 import org.apache.commons.math3.stat.descriptive.DescriptiveStatistics;
 
 import static com.google.common.base.MoreObjects.toStringHelper;
@@ -45,7 +46,7 @@ public final class RaftMemberContext {
   private boolean installing;
   private int failures;
   private long failureTime;
-  private volatile RaftLogReader reader;
+  private volatile JournalReader<RaftLogEntry> reader;
   private final DescriptiveStatistics timeStats = new DescriptiveStatistics(APPEND_WINDOW_SIZE);
 
   RaftMemberContext(DefaultRaftMember member, RaftClusterContext cluster) {
@@ -55,7 +56,7 @@ public final class RaftMemberContext {
   /**
    * Resets the member state.
    */
-  public void resetState(RaftLog log) {
+  public void resetState(Journal<RaftLogEntry> log) {
     snapshotIndex = 0;
     nextSnapshotIndex = 0;
     nextSnapshotOffset = 0;
@@ -72,11 +73,11 @@ public final class RaftMemberContext {
 
     switch (member.getType()) {
       case PASSIVE:
-        reader = log.openReader(log.writer().getLastIndex() + 1, RaftLogReader.Mode.COMMITS);
+        reader = log.openReader(log.writer().getLastIndex() + 1, JournalReader.Mode.COMMITS);
         break;
       case PROMOTABLE:
       case ACTIVE:
-        reader = log.openReader(log.writer().getLastIndex() + 1, RaftLogReader.Mode.ALL);
+        reader = log.openReader(log.writer().getLastIndex() + 1, JournalReader.Mode.ALL);
         break;
     }
   }
@@ -95,7 +96,7 @@ public final class RaftMemberContext {
    *
    * @return The member log reader.
    */
-  public RaftLogReader getLogReader() {
+  public JournalReader<RaftLogEntry> getLogReader() {
     return reader;
   }
 
@@ -350,7 +351,7 @@ public final class RaftMemberContext {
   /**
    * Sets the member response time.
    *
-   * @param heartbeatTime The member response time.
+   * @param responseTime The member response time.
    */
   public void setResponseTime(long responseTime) {
     this.responseTime = Math.max(this.responseTime, responseTime);
@@ -396,7 +397,7 @@ public final class RaftMemberContext {
 
   @Override
   public String toString() {
-    RaftLogReader reader = this.reader;
+    JournalReader<RaftLogEntry> reader = this.reader;
     return toStringHelper(this)
         .add("member", member.memberId())
         .add("term", term)
