@@ -32,6 +32,13 @@ public interface Partition {
   PartitionId id();
 
   /**
+   * Returns the current status for the partition.
+   *
+   * @return the current status for the partition
+   */
+  AvailabilityStatus status();
+
+  /**
    * Returns the partition term.
    *
    * @return the partition term

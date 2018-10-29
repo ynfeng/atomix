@@ -16,6 +16,7 @@
 package io.atomix.protocols.raft.partition;
 
 import io.atomix.cluster.MemberId;
+import io.atomix.primitive.partition.AvailabilityStatus;
 import io.atomix.primitive.partition.Partition;
 import io.atomix.primitive.partition.PartitionId;
 import io.atomix.primitive.partition.PartitionManagementService;
@@ -70,6 +71,14 @@ public class RaftPartition implements Partition {
    */
   public String name() {
     return String.format("%s-partition-%d", partitionId.group(), partitionId.id());
+  }
+
+  @Override
+  public AvailabilityStatus status() {
+    return (client == null || client.status() == AvailabilityStatus.AVAILABLE)
+        && (server == null || server.status() == AvailabilityStatus.AVAILABLE)
+        ? AvailabilityStatus.AVAILABLE
+        : AvailabilityStatus.UNAVAILABLE;
   }
 
   @Override

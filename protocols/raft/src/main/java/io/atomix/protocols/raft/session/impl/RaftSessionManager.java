@@ -45,6 +45,7 @@ import org.slf4j.Logger;
 
 import java.time.Duration;
 import java.util.Collection;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -52,6 +53,7 @@ import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.function.BinaryOperator;
 import java.util.stream.Collectors;
 
 import static com.google.common.base.MoreObjects.toStringHelper;
@@ -104,6 +106,19 @@ public class RaftSessionManager {
    */
   public long term() {
     return 0; // TODO
+  }
+
+  /**
+   * Returns a boolean indicating whether all sessions are currently connected.
+   *
+   * @return indicates whether all sessions are currently connected
+   */
+  public boolean allConnected() {
+    PrimitiveState maxState = sessions.values().stream()
+        .map(state -> state.getState())
+        .reduce(BinaryOperator.maxBy(Comparator.comparing(PrimitiveState::ordinal)))
+        .orElse(PrimitiveState.CONNECTED);
+    return maxState == PrimitiveState.CONNECTED;
   }
 
   /**

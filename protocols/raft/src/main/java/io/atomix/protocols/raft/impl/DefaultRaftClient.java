@@ -84,6 +84,11 @@ public class DefaultRaftClient implements RaftClient {
   }
 
   @Override
+  public boolean isConnected() {
+    return sessionManager.allConnected();
+  }
+
+  @Override
   public long term() {
     return sessionManager.term();
   }

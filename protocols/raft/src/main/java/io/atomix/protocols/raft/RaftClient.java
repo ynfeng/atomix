@@ -90,6 +90,13 @@ public interface RaftClient {
   String clientId();
 
   /**
+   * Returns a boolean indicating whether the client is currently connected.
+   *
+   * @return indicates whether the client is currently connected
+   */
+  boolean isConnected();
+
+  /**
    * Returns the current term.
    *
    * @return the current term

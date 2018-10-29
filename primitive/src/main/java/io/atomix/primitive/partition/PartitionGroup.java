@@ -74,6 +74,13 @@ public interface PartitionGroup extends Configured<PartitionGroupConfig> {
   PrimitiveProtocol.Type protocol();
 
   /**
+   * Returns the current status for the partition group.
+   *
+   * @return the current status for the partition group
+   */
+  AvailabilityStatus status();
+
+  /**
    * Returns a new primitive protocol.
    *
    * @return a new primitive protocol

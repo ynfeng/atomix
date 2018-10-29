@@ -19,6 +19,7 @@ import io.atomix.cluster.ClusterMembershipService;
 import io.atomix.cluster.MemberId;
 import io.atomix.cluster.messaging.ClusterCommunicationService;
 import io.atomix.primitive.PrimitiveTypeRegistry;
+import io.atomix.primitive.partition.AvailabilityStatus;
 import io.atomix.primitive.partition.Partition;
 import io.atomix.protocols.raft.RaftServer;
 import io.atomix.protocols.raft.partition.RaftPartition;
@@ -77,6 +78,15 @@ public class RaftPartitionServer implements Managed<RaftPartitionServer> {
     this.clusterCommunicator = clusterCommunicator;
     this.primitiveTypes = primitiveTypes;
     this.threadContextFactory = threadContextFactory;
+  }
+
+  /**
+   * Returns the current availability status of the server.
+   *
+   * @return the current availability status of the server
+   */
+  public AvailabilityStatus status() {
+    return server != null && server.isRunning() ? AvailabilityStatus.AVAILABLE : AvailabilityStatus.UNAVAILABLE;
   }
 
   @Override

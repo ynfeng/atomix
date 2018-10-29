@@ -22,6 +22,7 @@ import io.atomix.cluster.Member;
 import io.atomix.cluster.MemberId;
 import io.atomix.cluster.messaging.ClusterCommunicationService;
 import io.atomix.primitive.Recovery;
+import io.atomix.primitive.partition.AvailabilityStatus;
 import io.atomix.primitive.partition.ManagedPartitionGroup;
 import io.atomix.primitive.partition.Partition;
 import io.atomix.primitive.partition.PartitionGroup;
@@ -169,6 +170,11 @@ public class RaftPartitionGroup implements ManagedPartitionGroup {
   @Override
   public PartitionGroup.Type type() {
     return TYPE;
+  }
+
+  @Override
+  public AvailabilityStatus status() {
+    return AvailabilityStatus.status(partitions.values().stream().map(Partition::status));
   }
 
   @Override

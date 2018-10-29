@@ -17,6 +17,7 @@ package io.atomix.protocols.raft.partition.impl;
 
 import io.atomix.cluster.MemberId;
 import io.atomix.primitive.PrimitiveType;
+import io.atomix.primitive.partition.AvailabilityStatus;
 import io.atomix.primitive.partition.PartitionClient;
 import io.atomix.primitive.service.ServiceConfig;
 import io.atomix.protocols.raft.RaftClient;
@@ -53,6 +54,15 @@ public class RaftPartitionClient implements PartitionClient, Managed<RaftPartiti
     this.localMemberId = localMemberId;
     this.protocol = protocol;
     this.threadContextFactory = threadContextFactory;
+  }
+
+  /**
+   * Returns the current availability status of the client.
+   *
+   * @return the current availability status of the client
+   */
+  public AvailabilityStatus status() {
+    return client != null && client.isConnected() ? AvailabilityStatus.AVAILABLE : AvailabilityStatus.UNAVAILABLE;
   }
 
   /**
