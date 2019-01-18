@@ -64,6 +64,7 @@ public class DefaultServiceContext implements ServiceContext {
   private final ThreadContextFactory threadContextFactory;
   private long currentIndex;
   private long currentTimestamp;
+  private long timestampDelta;
   private OperationType currentOperation;
   private final LogicalClock logicalClock = new LogicalClock() {
     @Override
@@ -198,7 +199,23 @@ public class DefaultServiceContext implements ServiceContext {
    */
   private void tick(long index, long timestamp) {
     this.currentIndex = index;
-    this.currentTimestamp = Math.max(currentTimestamp, timestamp);
+
+    // If the entry timestamp is less than the current state machine timestamp...
+    if (timestamp < currentTimestamp) {
+      // If the delta is not set, set the delta and do not change the current timestamp.
+      if (timestampDelta == 0) {
+        timestampDelta = currentTimestamp - timestamp;
+      }
+      // If the delta is set, set the current timestamp to the entry timestamp plus the delta.
+      else {
+        currentTimestamp = timestamp + timestampDelta;
+      }
+    }
+    // If the entry timestamp is greater than the current timestamp, update the current timestamp and reset the delta.
+    else {
+      currentTimestamp = timestamp;
+      timestampDelta = 0;
+    }
 
     // Set the current operation type to COMMAND to allow events to be sent.
     setOperation(OperationType.COMMAND);
