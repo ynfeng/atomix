@@ -50,7 +50,9 @@ public class SegmentedJournalWriter<E> implements JournalWriter<E> {
   @Override
   public void reset(long index) {
     if (index > currentSegment.index()) {
-      currentWriter.close();
+      if (currentWriter.isOpen()) {
+        currentWriter.close();
+      }
       currentSegment.release();
       currentSegment = journal.resetSegments(index);
       currentSegment.acquire();
@@ -130,6 +132,11 @@ public class SegmentedJournalWriter<E> implements JournalWriter<E> {
   @Override
   public void flush() {
     currentWriter.flush();
+  }
+
+  @Override
+  public boolean isOpen() {
+    return currentWriter.isOpen();
   }
 
   @Override

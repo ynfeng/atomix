@@ -330,6 +330,11 @@ class FileChannelJournalSegmentWriter<E> implements JournalWriter<E> {
   }
 
   @Override
+  public boolean isOpen() {
+    return channel.isOpen();
+  }
+
+  @Override
   public void close() {
     flush();
   }

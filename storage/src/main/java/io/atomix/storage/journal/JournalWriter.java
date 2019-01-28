@@ -84,6 +84,8 @@ public interface JournalWriter<E> extends AutoCloseable {
    */
   void flush();
 
+  boolean isOpen();
+
   @Override
   void close();
 }

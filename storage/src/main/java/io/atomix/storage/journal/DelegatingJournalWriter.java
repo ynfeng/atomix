@@ -73,6 +73,11 @@ public class DelegatingJournalWriter<E> implements JournalWriter<E> {
   }
 
   @Override
+  public boolean isOpen() {
+    return delegate.isOpen();
+  }
+
+  @Override
   public void close() {
     delegate.close();
   }

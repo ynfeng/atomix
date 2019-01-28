@@ -52,6 +52,7 @@ class MappedJournalSegmentWriter<E> implements JournalWriter<E> {
   private final Namespace namespace;
   private final long firstIndex;
   private Indexed<E> lastEntry;
+  private volatile boolean closed;
 
   MappedJournalSegmentWriter(
       MappedByteBuffer buffer,
@@ -278,12 +279,19 @@ class MappedJournalSegmentWriter<E> implements JournalWriter<E> {
   }
 
   @Override
+  public boolean isOpen() {
+    return !closed;
+  }
+
+  @Override
   public void close() {
     flush();
     try {
       BufferCleaner.freeBuffer(mappedBuffer);
     } catch (IOException e) {
       throw new StorageException(e);
+    } finally {
+      closed = true;
     }
   }
 }
