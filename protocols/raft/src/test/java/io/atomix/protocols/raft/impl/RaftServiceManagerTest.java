@@ -36,6 +36,7 @@ import io.atomix.primitive.PrimitiveManagementService;
 import io.atomix.primitive.PrimitiveType;
 import io.atomix.primitive.PrimitiveTypeRegistry;
 import io.atomix.primitive.config.PrimitiveConfig;
+import io.atomix.primitive.operation.impl.DefaultOperationId;
 import io.atomix.primitive.operation.OperationId;
 import io.atomix.primitive.operation.OperationType;
 import io.atomix.primitive.service.AbstractPrimitiveService;
@@ -156,10 +157,7 @@ public class RaftServiceManagerTest {
     assertTrue(snapshotInstalled.get());
   }
 
-  private static final OperationId RUN = OperationId.newBuilder()
-      .setType(OperationType.COMMAND)
-      .setName("run")
-      .build();
+  private static final OperationId RUN = new DefaultOperationId("run", OperationType.COMMAND);
 
   private class TestService extends AbstractPrimitiveService {
     protected TestService(PrimitiveType primitiveType) {

@@ -19,6 +19,8 @@ import java.lang.reflect.Method;
 import java.util.HashMap;
 import java.util.Map;
 
+import io.atomix.primitive.operation.impl.DefaultOperationId;
+
 /**
  * Operation utilities.
  */
@@ -52,8 +54,8 @@ public final class Operations {
     for (Method method : type.getDeclaredMethods()) {
       OperationId operationId = getOperationId(method);
       if (operationId != null) {
-        if (operations.values().stream().anyMatch(operation -> operation.getName().equals(operationId.getName()))) {
-          throw new IllegalStateException("Duplicate operation name '" + operationId.getName() + "'");
+        if (operations.values().stream().anyMatch(operation -> operation.operation().equals(operationId.operation()))) {
+          throw new IllegalStateException("Duplicate operation name '" + operationId.operation() + "'");
         }
         operations.put(method, operationId);
       }
@@ -96,8 +98,8 @@ public final class Operations {
     for (Method method : type.getDeclaredMethods()) {
       OperationId operationId = getOperationId(method);
       if (operationId != null) {
-        if (operations.keySet().stream().anyMatch(operation -> operation.getName().equals(operationId.getName()))) {
-          throw new IllegalStateException("Duplicate operation name '" + operationId.getName() + "'");
+        if (operations.keySet().stream().anyMatch(operation -> operation.operation().equals(operationId.operation()))) {
+          throw new IllegalStateException("Duplicate operation name '" + operationId.operation() + "'");
         }
         operations.put(operationId, method);
       }
@@ -118,26 +120,17 @@ public final class Operations {
     Command command = method.getAnnotation(Command.class);
     if (command != null) {
       String name = command.value().equals("") ? method.getName() : command.value();
-      return OperationId.newBuilder()
-          .setName(name)
-          .setType(OperationType.COMMAND)
-          .build();
+      return new DefaultOperationId(name, OperationType.COMMAND);
     }
     Query query = method.getAnnotation(Query.class);
     if (query != null) {
       String name = query.value().equals("") ? method.getName() : query.value();
-      return OperationId.newBuilder()
-          .setName(name)
-          .setType(OperationType.QUERY)
-          .build();
+      return new DefaultOperationId(name, OperationType.QUERY);
     }
     Operation operation = method.getAnnotation(Operation.class);
     if (operation != null) {
       String name = operation.value().equals("") ? method.getName() : operation.value();
-      return OperationId.newBuilder()
-          .setName(name)
-          .setType(operation.type())
-          .build();
+      return new DefaultOperationId(name, operation.type());
     }
     return null;
   }

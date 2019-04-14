@@ -31,7 +31,7 @@ import com.google.common.primitives.Longs;
 import io.atomix.cluster.MemberId;
 import io.atomix.primitive.PrimitiveId;
 import io.atomix.primitive.PrimitiveType;
-import io.atomix.primitive.operation.OperationId;
+import io.atomix.primitive.operation.OperationMetadata;
 import io.atomix.primitive.operation.OperationType;
 import io.atomix.primitive.operation.PrimitiveOperation;
 import io.atomix.primitive.service.PrimitiveService;
@@ -689,7 +689,6 @@ public class RaftServiceManager implements AutoCloseable {
         ReadConsistency.valueOf(entry.entry().getOpenSession().getReadConsistency().name()),
         entry.entry().getOpenSession().getTimeout(),
         entry.entry().getTimestamp(),
-        service.serializer(),
         service,
         raft,
         threadContextFactory));
@@ -794,7 +793,7 @@ public class RaftServiceManager implements AutoCloseable {
             entry.entry().getTimestamp(),
             session,
             PrimitiveOperation.newBuilder()
-                .setId(OperationId.newBuilder()
+                .setId(OperationMetadata.newBuilder()
                     .setType(OperationType.COMMAND)
                     .setName(entry.entry().getCommand().getOperation())
                     .build())
@@ -837,7 +836,7 @@ public class RaftServiceManager implements AutoCloseable {
             entry.entry().getTimestamp(),
             session,
             PrimitiveOperation.newBuilder()
-                .setId(OperationId.newBuilder()
+                .setId(OperationMetadata.newBuilder()
                     .setType(OperationType.QUERY)
                     .setName(entry.entry().getQuery().getOperation())
                     .build())

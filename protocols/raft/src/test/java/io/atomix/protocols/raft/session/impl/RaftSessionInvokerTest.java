@@ -21,7 +21,7 @@ import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 
 import com.google.protobuf.ByteString;
-import io.atomix.primitive.operation.OperationId;
+import io.atomix.primitive.operation.OperationMetadata;
 import io.atomix.primitive.operation.OperationType;
 import io.atomix.primitive.operation.PrimitiveOperation;
 import io.atomix.primitive.session.SessionId;
@@ -49,11 +49,11 @@ import static org.mockito.Mockito.when;
  * @author <a href="http://github.com/kuujo">Jordan Halterman</a>
  */
 public class RaftSessionInvokerTest {
-  private static final OperationId COMMAND = OperationId.newBuilder()
+  private static final OperationMetadata COMMAND = OperationMetadata.newBuilder()
       .setType(OperationType.COMMAND)
       .setName("command")
       .build();
-  private static final OperationId QUERY = OperationId.newBuilder()
+  private static final OperationMetadata QUERY = OperationMetadata.newBuilder()
       .setType(OperationType.QUERY)
       .setName("query")
       .build();

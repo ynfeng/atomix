@@ -28,6 +28,7 @@ import io.atomix.primitive.PrimitiveId;
 import io.atomix.primitive.PrimitiveType;
 import io.atomix.primitive.operation.OperationType;
 import io.atomix.primitive.operation.PrimitiveOperation;
+import io.atomix.primitive.operation.impl.DefaultOperationId;
 import io.atomix.primitive.service.Commit;
 import io.atomix.primitive.service.PrimitiveService;
 import io.atomix.primitive.service.ServiceContext;
@@ -46,7 +47,6 @@ import io.atomix.utils.concurrent.ThreadContextFactory;
 import io.atomix.utils.config.ConfigurationException;
 import io.atomix.utils.logging.ContextualLoggerFactory;
 import io.atomix.utils.logging.LoggerContext;
-import io.atomix.utils.serializer.Serializer;
 import io.atomix.utils.time.LogicalClock;
 import io.atomix.utils.time.LogicalTimestamp;
 import io.atomix.utils.time.WallClock;
@@ -136,10 +136,6 @@ public class RaftServiceContext implements ServiceContext {
   @Override
   public PrimitiveType serviceType() {
     return primitiveType;
-  }
-
-  public Serializer serializer() {
-    return service.serializer();
   }
 
   @Override
@@ -244,7 +240,6 @@ public class RaftServiceContext implements ServiceContext {
           ReadConsistency.valueOf(serviceSession.getReadConsistency()),
           serviceSession.getTimeout(),
           serviceSession.getTimestamp(),
-          service.serializer(),
           this,
           raft,
           threadContextFactory));
@@ -519,7 +514,14 @@ public class RaftServiceContext implements ServiceContext {
   private OperationResult applyCommand(long index, long sequence, long timestamp, PrimitiveOperation operation, RaftSession session) {
     long eventIndex = session.getEventIndex();
 
-    Commit<byte[]> commit = new DefaultCommit<>(index, operation.getId(), operation.getValue().toByteArray(), session, timestamp);
+    Commit<byte[]> commit = new DefaultCommit<>(
+        index,
+        new DefaultOperationId(
+            operation.getId().getName(),
+            operation.getId().getType()),
+        operation.getValue().toByteArray(),
+        session,
+        timestamp);
 
     OperationResult result;
     try {
@@ -661,7 +663,14 @@ public class RaftServiceContext implements ServiceContext {
     // Set the current operation type to QUERY to prevent events from being sent to clients.
     setOperation(OperationType.QUERY);
 
-    Commit<byte[]> commit = new DefaultCommit<>(currentIndex, operation.getId(), operation.getValue().toByteArray(), session, timestamp);
+    Commit<byte[]> commit = new DefaultCommit<>(
+        currentIndex,
+        new DefaultOperationId(
+            operation.getId().getName(),
+            operation.getId().getType()),
+        operation.getValue().toByteArray(),
+        session,
+        timestamp);
 
     long eventIndex = session.getEventIndex();
 

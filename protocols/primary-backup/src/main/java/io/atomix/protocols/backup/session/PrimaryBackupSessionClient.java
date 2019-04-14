@@ -238,7 +238,7 @@ public class PrimaryBackupSessionClient implements SessionClient {
   }
 
   @Override
-  public void removeEventListener(EventType eventType, Consumer<PrimitiveEvent> listener) {
+  public void removeEventListener(EventType eventType, Consumer listener) {
     eventListeners.computeIfAbsent(eventType.canonicalize(), t -> Sets.newLinkedHashSet()).remove(listener);
   }
 

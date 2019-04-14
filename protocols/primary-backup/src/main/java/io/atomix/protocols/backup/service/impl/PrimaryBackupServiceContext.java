@@ -510,7 +510,7 @@ public class PrimaryBackupServiceContext implements ServiceContext {
    * @return the service session
    */
   public PrimaryBackupSession createSession(long sessionId, MemberId memberId) {
-    PrimaryBackupSession session = new PrimaryBackupSession(SessionId.from(sessionId), memberId, service.serializer(), this);
+    PrimaryBackupSession session = new PrimaryBackupSession(SessionId.from(sessionId), memberId, this);
     if (sessions.putIfAbsent(sessionId, session) == null) {
       service.register(session);
     }

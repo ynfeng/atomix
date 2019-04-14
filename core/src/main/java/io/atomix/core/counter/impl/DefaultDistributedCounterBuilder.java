@@ -51,7 +51,7 @@ public class DefaultDistributedCounterBuilder extends DistributedCounterBuilder 
       }
     } else if (protocol instanceof ProxyProtocol) {
       return newProxy(AtomicCounterService.class)
-          .thenCompose(proxy -> new AtomicCounterProxy(proxy, managementService.getPrimitiveRegistry()).connect())
+          .thenCompose(proxy -> new DefaultAsyncAtomicCounter(proxy, managementService.getPrimitiveRegistry()).connect())
           .thenApply(DelegatingDistributedCounter::new)
           .thenApply(AsyncDistributedCounter::sync);
     } else {

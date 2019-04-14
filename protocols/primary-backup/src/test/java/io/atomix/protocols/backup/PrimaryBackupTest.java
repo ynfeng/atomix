@@ -26,7 +26,6 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicLong;
-import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
 import com.google.protobuf.ByteString;
@@ -38,22 +37,33 @@ import io.atomix.primitive.PrimitiveType;
 import io.atomix.primitive.Replication;
 import io.atomix.primitive.config.PrimitiveConfig;
 import io.atomix.primitive.event.EventType;
-import io.atomix.primitive.operation.OperationId;
+import io.atomix.primitive.operation.OperationMetadata;
 import io.atomix.primitive.operation.OperationType;
 import io.atomix.primitive.operation.PrimitiveOperation;
+import io.atomix.primitive.operation.impl.DefaultOperationId;
 import io.atomix.primitive.partition.MemberGroupStrategy;
 import io.atomix.primitive.partition.PartitionId;
 import io.atomix.primitive.partition.PrimaryElection;
 import io.atomix.primitive.partition.TestPrimaryElection;
 import io.atomix.primitive.service.AbstractPrimitiveService;
-import io.atomix.primitive.service.Commit;
 import io.atomix.primitive.service.PrimitiveService;
 import io.atomix.primitive.service.ServiceExecutor;
 import io.atomix.primitive.session.Session;
 import io.atomix.primitive.session.SessionClient;
 import io.atomix.primitive.session.SessionId;
 import io.atomix.protocols.backup.PrimaryBackupServer.Role;
+import io.atomix.protocols.backup.protocol.EventRequest;
+import io.atomix.protocols.backup.protocol.EventResponse;
+import io.atomix.protocols.backup.protocol.OnCloseRequest;
+import io.atomix.protocols.backup.protocol.OnCloseResponse;
+import io.atomix.protocols.backup.protocol.OnExpireRequest;
+import io.atomix.protocols.backup.protocol.OnExpireResponse;
+import io.atomix.protocols.backup.protocol.ReadRequest;
+import io.atomix.protocols.backup.protocol.ReadResponse;
+import io.atomix.protocols.backup.protocol.TestEvent;
 import io.atomix.protocols.backup.protocol.TestPrimaryBackupProtocolFactory;
+import io.atomix.protocols.backup.protocol.WriteRequest;
+import io.atomix.protocols.backup.protocol.WriteResponse;
 import io.atomix.utils.concurrent.Futures;
 import io.atomix.utils.serializer.Serializer;
 import io.atomix.utils.serializer.serializers.DefaultSerializers;
@@ -520,24 +530,24 @@ public class PrimaryBackupTest extends ConcurrentTestCase {
         .build());
   }
 
-  private static final OperationId WRITE = OperationId.newBuilder()
+  private static final OperationMetadata WRITE = OperationMetadata.newBuilder()
       .setType(OperationType.COMMAND)
       .setName("write")
       .build();
-  private static final OperationId EVENT = OperationId.newBuilder()
+  private static final OperationMetadata EVENT = OperationMetadata.newBuilder()
       .setType(OperationType.COMMAND)
       .setName("event")
       .build();
-  private static final OperationId EXPIRE = OperationId.newBuilder()
+  private static final OperationMetadata EXPIRE = OperationMetadata.newBuilder()
       .setType(OperationType.COMMAND)
       .setName("expire")
       .build();
-  private static final OperationId CLOSE = OperationId.newBuilder()
+  private static final OperationMetadata CLOSE = OperationMetadata.newBuilder()
       .setType(OperationType.COMMAND)
       .setName("close")
       .build();
 
-  private static final OperationId READ = OperationId.newBuilder()
+  private static final OperationMetadata READ = OperationMetadata.newBuilder()
       .setType(OperationType.QUERY)
       .setName("read")
       .build();
@@ -573,39 +583,34 @@ public class PrimaryBackupTest extends ConcurrentTestCase {
   /**
    * Test state machine.
    */
-  public static class TestPrimitiveService extends AbstractPrimitiveService<Object> {
-    private Commit<Void> expire;
-    private Commit<Void> close;
+  public static class TestPrimitiveService extends AbstractPrimitiveService {
+    private SessionId expire;
+    private SessionId close;
 
     public TestPrimitiveService() {
       super(TestPrimitiveType.INSTANCE);
     }
 
     @Override
-    public Serializer serializer() {
-      return SERIALIZER;
-    }
-
-    @Override
     protected void configure(ServiceExecutor executor) {
-      executor.register(WRITE, this::write);
-      executor.register(READ, this::read);
-      executor.register(EVENT, this::event);
-      executor.<Void>register(CLOSE, c -> close(c));
-      executor.register(EXPIRE, (Consumer<Commit<Void>>) this::expire);
+      executor.register(new DefaultOperationId(WRITE.getName(), WRITE.getType()), this::write, WriteRequest::parseFrom, WriteResponse::toByteArray);
+      executor.register(new DefaultOperationId(READ.getName(), READ.getType()), this::read, ReadRequest::parseFrom, ReadResponse::toByteArray);
+      executor.register(new DefaultOperationId(EVENT.getName(), EVENT.getType()), this::event, EventRequest::parseFrom, EventResponse::toByteArray);
+      executor.register(new DefaultOperationId(CLOSE.getName(), CLOSE.getType()), this::close, OnCloseRequest::parseFrom, OnCloseResponse::toByteArray);
+      executor.register(new DefaultOperationId(EXPIRE.getName(), EXPIRE.getType()), this::expire, OnExpireRequest::parseFrom, OnExpireResponse::toByteArray);
     }
 
     @Override
     public void onExpire(Session session) {
       if (expire != null) {
-        expire.session().publish(EXPIRE_EVENT);
+        getSession(expire).publish(EXPIRE_EVENT);
       }
     }
 
     @Override
     public void onClose(Session session) {
-      if (close != null && !session.equals(close.session())) {
-        close.session().publish(CLOSE_EVENT);
+      if (close != null && !session.sessionId().equals(close)) {
+        getSession(close).publish(CLOSE_EVENT);
       }
     }
 
@@ -619,31 +624,39 @@ public class PrimaryBackupTest extends ConcurrentTestCase {
       assertEquals(1, input.read());
     }
 
-    protected long write(Commit<Void> commit) {
-      return commit.index();
+    protected WriteResponse write(WriteRequest request) {
+      return WriteResponse.newBuilder()
+          .setIndex(getCurrentIndex())
+          .build();
     }
 
-    protected long read(Commit<Void> commit) {
-      return commit.index();
+    protected ReadResponse read(ReadRequest request) {
+      return ReadResponse.newBuilder()
+          .setIndex(getCurrentIndex())
+          .build();
     }
 
-    protected long event(Commit<Boolean> commit) {
-      if (commit.value()) {
-        commit.session().publish(CHANGE_EVENT, commit.index());
+    protected EventResponse event(EventRequest request) {
+      if (request.getSender()) {
+        getCurrentSession().publish(CHANGE_EVENT, TestEvent.newBuilder().setIndex(getCurrentIndex()).build(), TestEvent::toByteArray);
       } else {
         for (Session session : getSessions()) {
-          session.publish(CHANGE_EVENT, commit.index());
+          session.publish(CHANGE_EVENT, TestEvent.newBuilder().setIndex(getCurrentIndex()).build(), TestEvent::toByteArray);
         }
       }
-      return commit.index();
+      return EventResponse.newBuilder()
+          .setIndex(getCurrentIndex())
+          .build();
     }
 
-    public void close(Commit<Void> commit) {
-      this.close = commit;
+    public OnCloseResponse close(OnCloseRequest request) {
+      close = getCurrentSession().sessionId();
+      return OnCloseResponse.newBuilder().build();
     }
 
-    public void expire(Commit<Void> commit) {
-      this.expire = commit;
+    public OnExpireResponse expire(OnExpireRequest request) {
+      expire = getCurrentSession().sessionId();
+      return OnExpireResponse.newBuilder().build();
     }
   }
 

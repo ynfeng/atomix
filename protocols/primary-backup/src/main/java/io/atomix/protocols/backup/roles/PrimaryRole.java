@@ -23,7 +23,7 @@ import java.util.stream.Collectors;
 
 import com.google.protobuf.ByteString;
 import io.atomix.cluster.MemberId;
-import io.atomix.primitive.operation.OperationId;
+import io.atomix.primitive.operation.impl.DefaultOperationId;
 import io.atomix.primitive.operation.OperationType;
 import io.atomix.primitive.service.impl.DefaultCommit;
 import io.atomix.primitive.session.Session;
@@ -115,10 +115,7 @@ public class PrimaryRole extends PrimaryBackupRole {
           try {
             byte[] result = context.service().apply(new DefaultCommit<>(
                 context.setIndex(index),
-                OperationId.newBuilder()
-                    .setType(OperationType.COMMAND)
-                    .setName(request.getOperation())
-                    .build(),
+                new DefaultOperationId(request.getOperation(), OperationType.COMMAND),
                 !request.getValue().isEmpty() ? request.getValue().toByteArray() : null,
                 context.setSession(session),
                 context.setTimestamp(timestamp)));
@@ -165,10 +162,7 @@ public class PrimaryRole extends PrimaryBackupRole {
     try {
       byte[] result = context.service().apply(new DefaultCommit<>(
           context.getIndex(),
-          OperationId.newBuilder()
-              .setType(OperationType.QUERY)
-              .setName(request.getOperation())
-              .build(),
+          new DefaultOperationId(request.getOperation(), OperationType.QUERY),
           !request.getValue().isEmpty() ? request.getValue().toByteArray() : null,
           context.setSession(session),
           context.currentTimestamp()));

@@ -17,7 +17,7 @@ package io.atomix.core.idgenerator.impl;
 
 import java.util.concurrent.CompletableFuture;
 
-import io.atomix.core.counter.impl.AtomicCounterProxy;
+import io.atomix.core.counter.impl.DefaultAsyncAtomicCounter;
 import io.atomix.core.counter.impl.AtomicCounterService;
 import io.atomix.core.idgenerator.AsyncAtomicIdGenerator;
 import io.atomix.core.idgenerator.AtomicIdGenerator;
@@ -36,7 +36,7 @@ public class DelegatingAtomicIdGeneratorBuilder extends AtomicIdGeneratorBuilder
   @Override
   public CompletableFuture<AtomicIdGenerator> buildAsync() {
     return newProxy(AtomicCounterService.class)
-        .thenCompose(proxy -> new AtomicCounterProxy(proxy, managementService.getPrimitiveRegistry()).connect())
+        .thenCompose(proxy -> new DefaultAsyncAtomicCounter(proxy, managementService.getPrimitiveRegistry()).connect())
         .thenApply(DelegatingAtomicIdGenerator::new)
         .thenApply(AsyncAtomicIdGenerator::sync);
   }

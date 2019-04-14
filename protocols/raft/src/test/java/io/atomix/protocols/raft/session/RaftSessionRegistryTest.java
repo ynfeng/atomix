@@ -26,8 +26,6 @@ import io.atomix.protocols.raft.protocol.RaftServerProtocol;
 import io.atomix.protocols.raft.service.RaftServiceContext;
 import io.atomix.utils.concurrent.ThreadContext;
 import io.atomix.utils.concurrent.ThreadContextFactory;
-import io.atomix.utils.serializer.Namespaces;
-import io.atomix.utils.serializer.Serializer;
 import org.junit.Test;
 
 import static org.junit.Assert.assertEquals;
@@ -74,7 +72,6 @@ public class RaftSessionRegistryTest {
         ReadConsistency.LINEARIZABLE,
         5000,
         System.currentTimeMillis(),
-        Serializer.using(Namespaces.BASIC),
         context,
         server,
         mock(ThreadContextFactory.class));

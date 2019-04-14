@@ -15,18 +15,21 @@
  */
 package io.atomix.primitive.session.impl;
 
+import java.util.concurrent.CompletableFuture;
+import java.util.function.Consumer;
+
 import io.atomix.primitive.PrimitiveState;
 import io.atomix.primitive.PrimitiveType;
 import io.atomix.primitive.event.EventType;
 import io.atomix.primitive.event.PrimitiveEvent;
+import io.atomix.primitive.operation.OperationDecoder;
+import io.atomix.primitive.operation.OperationEncoder;
+import io.atomix.primitive.operation.OperationId;
 import io.atomix.primitive.operation.PrimitiveOperation;
 import io.atomix.primitive.partition.PartitionId;
 import io.atomix.primitive.session.SessionClient;
 import io.atomix.primitive.session.SessionId;
 import io.atomix.utils.concurrent.ThreadContext;
-
-import java.util.concurrent.CompletableFuture;
-import java.util.function.Consumer;
 
 import static com.google.common.base.MoreObjects.toStringHelper;
 
@@ -86,12 +89,17 @@ public class DelegatingSessionClient implements SessionClient {
   }
 
   @Override
+  public <T, U> CompletableFuture<U> execute(OperationId operationId, T operation, OperationEncoder<T> encoder, OperationDecoder<U> decoder) {
+    return session.execute(operationId, operation, encoder, decoder);
+  }
+
+  @Override
   public void addEventListener(EventType eventType, Consumer<PrimitiveEvent> listener) {
     session.addEventListener(eventType, listener);
   }
 
   @Override
-  public void removeEventListener(EventType eventType, Consumer<PrimitiveEvent> listener) {
+  public void removeEventListener(EventType eventType, Consumer<?> listener) {
     session.removeEventListener(eventType, listener);
   }
 

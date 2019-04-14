@@ -28,7 +28,6 @@ import java.nio.file.attribute.BasicFileAttributes;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
@@ -43,38 +42,46 @@ import java.util.stream.Collectors;
 import com.google.common.collect.Sets;
 import io.atomix.cluster.ClusterMembershipService;
 import io.atomix.cluster.MemberId;
-import io.atomix.primitive.AbstractAsyncPrimitive;
+import io.atomix.primitive.AbstractPrimitiveProxy;
 import io.atomix.primitive.AsyncPrimitive;
 import io.atomix.primitive.PrimitiveBuilder;
 import io.atomix.primitive.PrimitiveException;
-import io.atomix.primitive.PrimitiveInfo;
 import io.atomix.primitive.PrimitiveManagementService;
-import io.atomix.primitive.PrimitiveRegistry;
 import io.atomix.primitive.PrimitiveState;
 import io.atomix.primitive.PrimitiveType;
 import io.atomix.primitive.SyncPrimitive;
 import io.atomix.primitive.config.PrimitiveConfig;
-import io.atomix.primitive.event.Event;
-import io.atomix.primitive.operation.Command;
-import io.atomix.primitive.operation.Query;
+import io.atomix.primitive.event.EventType;
+import io.atomix.primitive.operation.OperationId;
+import io.atomix.primitive.operation.OperationType;
+import io.atomix.primitive.operation.impl.DefaultOperationId;
 import io.atomix.primitive.partition.PartitionId;
 import io.atomix.primitive.protocol.PrimitiveProtocol;
-import io.atomix.primitive.proxy.ProxyClient;
-import io.atomix.primitive.proxy.impl.DefaultProxyClient;
 import io.atomix.primitive.service.AbstractPrimitiveService;
 import io.atomix.primitive.service.PrimitiveService;
+import io.atomix.primitive.service.ServiceExecutor;
 import io.atomix.primitive.session.Session;
 import io.atomix.primitive.session.SessionClient;
 import io.atomix.primitive.session.SessionId;
 import io.atomix.protocols.raft.cluster.RaftClusterEvent;
 import io.atomix.protocols.raft.cluster.RaftMember;
+import io.atomix.protocols.raft.protocol.EventRequest;
+import io.atomix.protocols.raft.protocol.EventResponse;
+import io.atomix.protocols.raft.protocol.OnCloseRequest;
+import io.atomix.protocols.raft.protocol.OnCloseResponse;
+import io.atomix.protocols.raft.protocol.OnExpireRequest;
+import io.atomix.protocols.raft.protocol.OnExpireResponse;
+import io.atomix.protocols.raft.protocol.ReadRequest;
+import io.atomix.protocols.raft.protocol.ReadResponse;
 import io.atomix.protocols.raft.protocol.SessionMetadata;
+import io.atomix.protocols.raft.protocol.TestEvent;
 import io.atomix.protocols.raft.protocol.TestRaftProtocolFactory;
+import io.atomix.protocols.raft.protocol.WriteRequest;
+import io.atomix.protocols.raft.protocol.WriteResponse;
 import io.atomix.protocols.raft.storage.RaftStorage;
 import io.atomix.storage.StorageLevel;
 import io.atomix.utils.concurrent.SingleThreadContext;
 import io.atomix.utils.concurrent.ThreadContext;
-import io.atomix.utils.serializer.Serializer;
 import net.jodah.concurrentunit.ConcurrentTestCase;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.junit.After;
@@ -85,9 +92,7 @@ import org.junit.Test;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
-import static org.mockito.Matchers.any;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
 
 /**
  * Raft test.
@@ -1319,18 +1324,7 @@ public class RaftTest extends ConcurrentTestCase {
    * Creates a new primitive instance.
    */
   private TestPrimitive createPrimitive(RaftClient client, ReadConsistency consistency) throws Exception {
-    SessionClient partition = createSession(client, consistency);
-    ProxyClient<TestPrimitiveService> proxy = new DefaultProxyClient<>(
-        "test",
-        TestPrimitiveType.INSTANCE,
-        MultiRaftProtocol.builder().build(),
-        TestPrimitiveService.class,
-        Collections.singletonList(partition),
-        (key, partitions) -> partitions.get(0));
-    PrimitiveRegistry registry = mock(PrimitiveRegistry.class);
-    when(registry.createPrimitive(any(String.class), any(PrimitiveType.class))).thenReturn(CompletableFuture.completedFuture(new PrimitiveInfo("raft-test", TestPrimitiveType.INSTANCE)));
-    when(registry.deletePrimitive(any(String.class))).thenReturn(CompletableFuture.completedFuture(null));
-    return new TestPrimitiveImpl(proxy, registry);
+    return new TestPrimitiveProxy(createSession(client, consistency));
   }
 
   @Before
@@ -1417,54 +1411,21 @@ public class RaftTest extends ConcurrentTestCase {
 
     CompletableFuture<Void> onEvent(Consumer<Long> callback);
 
-    CompletableFuture<Void> onExpire(Consumer<String> callback);
+    CompletableFuture<Void> onExpire(Consumer<Long> callback);
 
-    CompletableFuture<Void> onClose(Consumer<String> callback);
+    CompletableFuture<Void> onClose(Consumer<Long> callback);
   }
 
-  /**
-   * Test primitive client interface.
-   */
-  public interface TestPrimitiveClient {
-    @Event("event")
-    void event(long index);
-
-    @Event("expire")
-    void expire(String value);
-
-    @Event("close")
-    void close(String value);
-  }
-
-  /**
-   * Test primitive service interface.
-   */
-  public interface TestPrimitiveService {
-    @Command
-    long write(String value);
-
-    @Query
-    long read();
-
-    @Command
-    long sendEvent(boolean sender);
-
-    @Command
-    void onExpire();
-
-    @Command
-    void onClose();
-  }
-
-  public static class TestPrimitiveImpl
-      extends AbstractAsyncPrimitive<TestPrimitive, TestPrimitiveService>
-      implements TestPrimitive, TestPrimitiveClient {
+  public static class TestPrimitiveProxy extends AbstractPrimitiveProxy implements TestPrimitive {
     private final Set<Consumer<Long>> eventListeners = Sets.newCopyOnWriteArraySet();
-    private final Set<Consumer<String>> expireListeners = Sets.newCopyOnWriteArraySet();
-    private final Set<Consumer<String>> closeListeners = Sets.newCopyOnWriteArraySet();
+    private final Set<Consumer<Long>> expireListeners = Sets.newCopyOnWriteArraySet();
+    private final Set<Consumer<Long>> closeListeners = Sets.newCopyOnWriteArraySet();
 
-    public TestPrimitiveImpl(ProxyClient<TestPrimitiveService> proxy, PrimitiveRegistry registry) {
-      super(proxy, registry);
+    public TestPrimitiveProxy(SessionClient client) {
+      super(client);
+      client.addEventListener(CHANGE_EVENT, this::event, TestEvent::parseFrom);
+      client.addEventListener(EXPIRE_EVENT, this::expire, TestEvent::parseFrom);
+      client.addEventListener(CLOSE_EVENT, this::close, TestEvent::parseFrom);
     }
 
     @Override
@@ -1474,17 +1435,20 @@ public class RaftTest extends ConcurrentTestCase {
 
     @Override
     public CompletableFuture<Long> write(String value) {
-      return getProxyClient().applyBy(name(), service -> service.write(value));
+      return getClient().execute(WRITE, WriteRequest.newBuilder().build(), WriteRequest::toByteArray, WriteResponse::parseFrom)
+          .thenApply(response -> response.getIndex());
     }
 
     @Override
     public CompletableFuture<Long> read() {
-      return getProxyClient().applyBy(name(), service -> service.read());
+      return getClient().execute(READ, ReadRequest.newBuilder().build(), ReadRequest::toByteArray, ReadResponse::parseFrom)
+          .thenApply(response -> response.getIndex());
     }
 
     @Override
     public CompletableFuture<Long> sendEvent(boolean sender) {
-      return getProxyClient().applyBy(name(), service -> service.sendEvent(sender));
+      return getClient().execute(EVENT, EventRequest.newBuilder().build(), EventRequest::toByteArray, EventResponse::parseFrom)
+          .thenApply(response -> response.getIndex());
     }
 
     @Override
@@ -1494,30 +1458,29 @@ public class RaftTest extends ConcurrentTestCase {
     }
 
     @Override
-    public CompletableFuture<Void> onExpire(Consumer<String> callback) {
+    public CompletableFuture<Void> onExpire(Consumer<Long> callback) {
       expireListeners.add(callback);
-      return getProxyClient().acceptBy(name(), service -> service.onExpire());
+      return getClient().execute(EXPIRE, OnExpireRequest.newBuilder().build(), OnExpireRequest::toByteArray, OnExpireResponse::parseFrom)
+          .thenApply(r -> null);
     }
 
     @Override
-    public CompletableFuture<Void> onClose(Consumer<String> callback) {
-      closeListeners.add(callback);
-      return getProxyClient().acceptBy(name(), service -> service.onClose());
+    public CompletableFuture<Void> onClose(Consumer<Long> callback) {
+      closeListeners.add(callback);;
+      return getClient().execute(CLOSE, OnCloseRequest.newBuilder().build(), OnCloseRequest::toByteArray, OnCloseResponse::parseFrom)
+          .thenApply(r -> null);
     }
 
-    @Override
-    public void event(long index) {
-      eventListeners.forEach(l -> l.accept(index));
+    public void event(TestEvent request) {
+      eventListeners.forEach(l -> l.accept(request.getIndex()));
     }
 
-    @Override
-    public void expire(String value) {
-      expireListeners.forEach(l -> l.accept(value));
+    public void expire(TestEvent request) {
+      expireListeners.forEach(l -> l.accept(request.getIndex()));
     }
 
-    @Override
-    public void close(String value) {
-      closeListeners.forEach(l -> l.accept(value));
+    public void close(TestEvent request) {
+      closeListeners.forEach(l -> l.accept(request.getIndex()));
     }
 
     @Override
@@ -1531,33 +1494,47 @@ public class RaftTest extends ConcurrentTestCase {
     }
   }
 
+  private static final OperationId WRITE = new DefaultOperationId("write", OperationType.COMMAND);
+  private static final OperationId EVENT = new DefaultOperationId("event", OperationType.COMMAND);
+  private static final OperationId EXPIRE = new DefaultOperationId("expire", OperationType.COMMAND);
+  private static final OperationId CLOSE = new DefaultOperationId("close", OperationType.COMMAND);
+  private static final OperationId READ = new DefaultOperationId("read", OperationType.QUERY);
+
+  private static final EventType CHANGE_EVENT = EventType.from("change");
+  private static final EventType EXPIRE_EVENT = EventType.from("expire");
+  private static final EventType CLOSE_EVENT = EventType.from("close");
+
   /**
    * Test state machine.
    */
-  public static class TestPrimitiveServiceImpl extends AbstractPrimitiveService<TestPrimitiveClient> implements TestPrimitiveService {
+  public static class TestPrimitiveServiceImpl extends AbstractPrimitiveService {
     private SessionId expire;
     private SessionId close;
 
     public TestPrimitiveServiceImpl() {
-      super(TestPrimitiveType.INSTANCE, TestPrimitiveClient.class);
+      super(TestPrimitiveType.INSTANCE);
     }
 
     @Override
-    public Serializer serializer() {
-      return Serializer.using(TestPrimitiveType.INSTANCE.namespace());
+    protected void configure(ServiceExecutor executor) {
+      executor.register(WRITE, this::write, WriteRequest::parseFrom, WriteResponse::toByteArray);
+      executor.register(READ, this::read, ReadRequest::parseFrom, ReadResponse::toByteArray);
+      executor.register(EVENT, this::event, EventRequest::parseFrom, EventResponse::toByteArray);
+      executor.register(CLOSE, this::onClose, OnCloseRequest::parseFrom, OnCloseResponse::toByteArray);
+      executor.register(EXPIRE, this::onExpire, OnExpireRequest::parseFrom, OnExpireResponse::toByteArray);
     }
 
     @Override
     public void onExpire(Session session) {
       if (expire != null) {
-        getSession(expire).accept(client -> client.expire("Hello world!"));
+        getSession(expire).publish(EXPIRE_EVENT, TestEvent.newBuilder().setIndex(getCurrentIndex()).build(), TestEvent::toByteArray);
       }
     }
 
     @Override
     public void onClose(Session session) {
       if (close != null && !session.sessionId().equals(close)) {
-        getSession(close).accept(client -> client.close("Hello world!"));
+        getSession(expire).publish(CLOSE_EVENT, TestEvent.newBuilder().setIndex(getCurrentIndex()).build(), TestEvent::toByteArray);
       }
     }
 
@@ -1571,36 +1548,39 @@ public class RaftTest extends ConcurrentTestCase {
 
     }
 
-    @Override
-    public long write(String value) {
-      return getCurrentIndex();
+    public WriteResponse write(WriteRequest request) {
+      return WriteResponse.newBuilder()
+          .setIndex(getCurrentIndex())
+          .build();
     }
 
-    @Override
-    public long read() {
-      return getCurrentIndex();
+    public ReadResponse read(ReadRequest request) {
+      return ReadResponse.newBuilder()
+          .setIndex(getCurrentIndex())
+          .build();
     }
 
-    @Override
-    public long sendEvent(boolean sender) {
-      if (sender) {
-        getCurrentSession().accept(service -> service.event(getCurrentIndex()));
+    public EventResponse event(EventRequest request) {
+      if (request.getSender()) {
+        getCurrentSession().publish(CHANGE_EVENT, TestEvent.newBuilder().setIndex(getCurrentIndex()).build(), TestEvent::toByteArray);
       } else {
-        for (Session<TestPrimitiveClient> session : getSessions()) {
-          session.accept(service -> service.event(getCurrentIndex()));
+        for (Session session : getSessions()) {
+          session.publish(CHANGE_EVENT, TestEvent.newBuilder().setIndex(getCurrentIndex()).build(), TestEvent::toByteArray);
         }
       }
-      return getCurrentIndex();
+      return EventResponse.newBuilder()
+          .setIndex(getCurrentIndex())
+          .build();
     }
 
-    @Override
-    public void onExpire() {
+    public OnExpireResponse onExpire(OnExpireRequest request) {
       expire = getCurrentSession().sessionId();
+      return OnExpireResponse.newBuilder().build();
     }
 
-    @Override
-    public void onClose() {
+    public OnCloseResponse onClose(OnCloseRequest request) {
       close = getCurrentSession().sessionId();
+      return OnCloseResponse.newBuilder().build();
     }
   }
 

@@ -22,7 +22,7 @@ import java.util.Queue;
 import java.util.concurrent.CompletableFuture;
 
 import io.atomix.cluster.MemberId;
-import io.atomix.primitive.operation.OperationId;
+import io.atomix.primitive.operation.impl.DefaultOperationId;
 import io.atomix.primitive.operation.OperationType;
 import io.atomix.primitive.service.impl.DefaultCommit;
 import io.atomix.primitive.session.Session;
@@ -110,10 +110,7 @@ public class BackupRole extends PrimaryBackupRole {
       try {
         context.service().apply(new DefaultCommit<>(
             context.setIndex(operation.getIndex()),
-            OperationId.newBuilder()
-                .setType(OperationType.COMMAND)
-                .setName(operation.getExecute().getOperation())
-                .build(),
+            new DefaultOperationId(operation.getExecute().getOperation(), OperationType.COMMAND),
             !operation.getExecute().getValue().isEmpty() ? operation.getExecute().getValue().toByteArray() : null,
             context.setSession(session),
             context.setTimestamp(operation.getTimestamp())));

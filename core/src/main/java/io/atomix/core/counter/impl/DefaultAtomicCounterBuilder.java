@@ -35,7 +35,7 @@ public class DefaultAtomicCounterBuilder extends AtomicCounterBuilder {
   @SuppressWarnings("unchecked")
   public CompletableFuture<AtomicCounter> buildAsync() {
     return newProxy(AtomicCounterService.class)
-        .thenCompose(proxy -> new AtomicCounterProxy(proxy, managementService.getPrimitiveRegistry()).connect())
+        .thenCompose(proxy -> new DefaultAsyncAtomicCounter(proxy, managementService.getPrimitiveRegistry()).connect())
         .thenApply(AsyncAtomicCounter::sync);
   }
 }

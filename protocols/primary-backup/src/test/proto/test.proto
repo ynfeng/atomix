@@ -1,0 +1,45 @@
+syntax = "proto3";
+
+package atomix.backup.protocol;
+
+option java_package = "io.atomix.protocols.backup.protocol";
+option java_outer_classname = "PrimaryBackupTestProto";
+option java_multiple_files = true;
+
+message WriteRequest {
+}
+
+message WriteResponse {
+    int64 index = 1;
+}
+
+message ReadRequest {
+}
+
+message ReadResponse {
+    int64 index = 1;
+}
+
+message EventRequest {
+    bool sender = 1;
+}
+
+message EventResponse {
+    int64 index = 1;
+}
+
+message OnCloseRequest {
+}
+
+message OnCloseResponse {
+}
+
+message OnExpireRequest {
+}
+
+message OnExpireResponse {
+}
+
+message TestEvent {
+    int64 index = 1;
+}

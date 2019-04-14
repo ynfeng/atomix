@@ -157,7 +157,7 @@ public class DefaultRaftSessionClient implements RaftSessionClient {
   }
 
   @Override
-  public void removeEventListener(EventType eventType, Consumer<PrimitiveEvent> listener) {
+  public void removeEventListener(EventType eventType, Consumer listener) {
     if (proxyListener != null) {
       proxyListener.removeEventListener(eventType, listener);
     }

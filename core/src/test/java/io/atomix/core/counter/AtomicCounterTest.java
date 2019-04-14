@@ -16,7 +16,7 @@
 package io.atomix.core.counter;
 
 import io.atomix.core.AbstractPrimitiveTest;
-import io.atomix.core.counter.impl.AtomicCounterProxy;
+import io.atomix.core.counter.impl.DefaultAsyncAtomicCounter;
 import org.junit.Test;
 
 import static org.junit.Assert.assertEquals;
@@ -24,7 +24,7 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
 /**
- * Unit tests for {@link AtomicCounterProxy}.
+ * Unit tests for {@link DefaultAsyncAtomicCounter}.
  */
 public class AtomicCounterTest extends AbstractPrimitiveTest {
   @Test

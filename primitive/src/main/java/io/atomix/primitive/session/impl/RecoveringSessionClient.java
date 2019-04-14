@@ -15,6 +15,13 @@
  */
 package io.atomix.primitive.session.impl;
 
+import java.time.Duration;
+import java.util.Set;
+import java.util.concurrent.CompletableFuture;
+import java.util.function.Consumer;
+import java.util.function.Function;
+import java.util.function.Supplier;
+
 import com.google.common.collect.HashMultimap;
 import com.google.common.collect.Multimap;
 import com.google.common.collect.Sets;
@@ -34,13 +41,6 @@ import io.atomix.utils.concurrent.ThreadContext;
 import io.atomix.utils.logging.ContextualLoggerFactory;
 import io.atomix.utils.logging.LoggerContext;
 import org.slf4j.Logger;
-
-import java.time.Duration;
-import java.util.Set;
-import java.util.concurrent.CompletableFuture;
-import java.util.function.Consumer;
-import java.util.function.Function;
-import java.util.function.Supplier;
 
 import static com.google.common.base.MoreObjects.toStringHelper;
 import static com.google.common.base.Preconditions.checkNotNull;
@@ -207,7 +207,7 @@ public class RecoveringSessionClient implements SessionClient {
   }
 
   @Override
-  public synchronized void removeEventListener(EventType eventType, Consumer<PrimitiveEvent> consumer) {
+  public synchronized void removeEventListener(EventType eventType, Consumer<?> consumer) {
     eventListeners.remove(eventType.canonicalize(), consumer);
     SessionClient proxy = this.session;
     if (proxy != null) {

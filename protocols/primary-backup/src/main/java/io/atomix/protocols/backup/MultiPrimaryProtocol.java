@@ -15,19 +15,8 @@
  */
 package io.atomix.protocols.backup;
 
-import java.util.Collection;
-import java.util.stream.Collectors;
-
-import io.atomix.primitive.PrimitiveType;
-import io.atomix.primitive.partition.PartitionGroup;
-import io.atomix.primitive.partition.PartitionService;
 import io.atomix.primitive.protocol.PrimitiveProtocol;
 import io.atomix.primitive.protocol.ProxyProtocol;
-import io.atomix.primitive.proxy.ProxyClient;
-import io.atomix.primitive.proxy.impl.DefaultProxyClient;
-import io.atomix.primitive.session.SessionClient;
-import io.atomix.protocols.backup.partition.PrimaryBackupPartition;
-import io.atomix.utils.config.ConfigurationException;
 
 import static com.google.common.base.MoreObjects.toStringHelper;
 
@@ -101,27 +90,6 @@ public class MultiPrimaryProtocol implements ProxyProtocol {
   @Override
   public String group() {
     return config.getGroup();
-  }
-
-  @Override
-  public <S> ProxyClient<S> newProxy(String primitiveName, PrimitiveType primitiveType, Class<S> serviceType, PartitionService partitionService) {
-    PartitionGroup partitionGroup = partitionService.getPartitionGroup(this);
-    if (partitionGroup == null) {
-      throw new ConfigurationException("No Raft partition group matching the configured protocol exists");
-    }
-
-    Collection<SessionClient> partitions = partitionGroup.getPartitions().stream()
-        .map(partition -> ((PrimaryBackupPartition) partition).getClient()
-            .sessionBuilder(primitiveName, primitiveType)
-            .withConsistency(config.getConsistency())
-            .withReplication(config.getReplication())
-            .withRecovery(config.getRecovery())
-            .withNumBackups(config.getBackups())
-            .withMaxRetries(config.getMaxRetries())
-            .withRetryDelay(config.getRetryDelay())
-            .build())
-        .collect(Collectors.toList());
-    return new DefaultProxyClient<>(primitiveName, primitiveType, this, serviceType, partitions, config.getPartitioner());
   }
 
   @Override

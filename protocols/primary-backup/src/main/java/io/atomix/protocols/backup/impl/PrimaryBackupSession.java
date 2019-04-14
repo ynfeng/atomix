@@ -23,7 +23,6 @@ import io.atomix.protocols.backup.PrimaryBackupServer.Role;
 import io.atomix.protocols.backup.service.impl.PrimaryBackupServiceContext;
 import io.atomix.utils.logging.ContextualLoggerFactory;
 import io.atomix.utils.logging.LoggerContext;
-import io.atomix.utils.serializer.Serializer;
 import org.slf4j.Logger;
 
 /**
@@ -34,8 +33,8 @@ public class PrimaryBackupSession extends AbstractSession {
   private final PrimaryBackupServiceContext context;
   private State state = State.OPEN;
 
-  public PrimaryBackupSession(SessionId sessionId, MemberId memberId, Serializer serializer, PrimaryBackupServiceContext context) {
-    super(sessionId, context.serviceName(), context.serviceType(), memberId, serializer);
+  public PrimaryBackupSession(SessionId sessionId, MemberId memberId, PrimaryBackupServiceContext context) {
+    super(sessionId, context.serviceName(), context.serviceType(), memberId);
     this.context = context;
     this.log = ContextualLoggerFactory.getLogger(getClass(), LoggerContext.builder(getClass())
         .addValue(context.serverName())

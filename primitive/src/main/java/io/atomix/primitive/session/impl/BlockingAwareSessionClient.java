@@ -73,7 +73,7 @@ public class BlockingAwareSessionClient extends DelegatingSessionClient {
   }
 
   @Override
-  public void removeEventListener(EventType eventType, Consumer<PrimitiveEvent> listener) {
+  public void removeEventListener(EventType eventType, Consumer<?> listener) {
     Consumer<PrimitiveEvent> wrappedListener = eventListeners.remove(listener);
     if (wrappedListener != null) {
       super.removeEventListener(eventType, wrappedListener);

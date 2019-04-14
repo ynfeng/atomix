@@ -64,7 +64,7 @@ public abstract class AbstractAtomicLockService extends AbstractPrimitiveService
   public void backup(OutputStream output) throws IOException {
     AtomicLockSnapshot.Builder builder = AtomicLockSnapshot.newBuilder();
     if (lock != null) {
-      builder.setLock(LockRequest.newBuilder()
+      builder.setLock(LockCall.newBuilder()
           .setId(lock.id)
           .setIndex(lock.index)
           .setSessionId(lock.session.id())
@@ -73,7 +73,7 @@ public abstract class AbstractAtomicLockService extends AbstractPrimitiveService
     }
 
     builder.addAllQueue(queue.stream()
-        .map(lock -> LockRequest.newBuilder()
+        .map(lock -> LockCall.newBuilder()
             .setId(lock.id)
             .setIndex(lock.index)
             .setSessionId(lock.session.id())

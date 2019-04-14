@@ -27,7 +27,6 @@ import com.google.common.collect.Lists;
 import com.google.protobuf.ByteString;
 import io.atomix.cluster.MemberId;
 import io.atomix.primitive.PrimitiveType;
-import io.atomix.primitive.event.EventType;
 import io.atomix.primitive.event.PrimitiveEvent;
 import io.atomix.primitive.operation.OperationType;
 import io.atomix.primitive.session.Session;
@@ -46,7 +45,6 @@ import io.atomix.utils.concurrent.ThreadContextFactory;
 import io.atomix.utils.logging.ContextualLoggerFactory;
 import io.atomix.utils.logging.LoggerContext;
 import io.atomix.utils.misc.TimestampPrinter;
-import io.atomix.utils.serializer.Serializer;
 import org.slf4j.Logger;
 
 import static com.google.common.base.MoreObjects.toStringHelper;
@@ -86,11 +84,10 @@ public class RaftSession extends AbstractSession {
       ReadConsistency readConsistency,
       long timeout,
       long lastUpdated,
-      Serializer serializer,
       RaftServiceContext context,
       RaftContext server,
       ThreadContextFactory threadContextFactory) {
-    super(sessionId, name, primitiveType, member, serializer);
+    super(sessionId, name, primitiveType, member);
     this.readConsistency = readConsistency;
     this.timeout = timeout;
     this.lastUpdated = lastUpdated;
@@ -423,25 +420,10 @@ public class RaftSession extends AbstractSession {
   }
 
   @Override
-  public void publish(EventType eventType, Object event) {
-    publish(RaftEvent.newBuilder()
-        .setType(eventType.id())
-        .setValue(ByteString.copyFrom(encode(event)))
-        .build());
-  }
-
-  @Override
-  public void publish(EventType eventType) {
-    publish(RaftEvent.newBuilder()
-        .setType(eventType.id())
-        .build());
-  }
-
-  @Override
   public void publish(PrimitiveEvent event) {
     publish(RaftEvent.newBuilder()
         .setType(event.type().id())
-        .setValue(ByteString.copyFrom(event.value()))
+        .setValue(event.value() != null ? ByteString.copyFrom(event.value()) : ByteString.EMPTY)
         .build());
   }
 
