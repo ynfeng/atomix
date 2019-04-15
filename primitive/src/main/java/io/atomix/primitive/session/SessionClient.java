@@ -18,6 +18,7 @@ package io.atomix.primitive.session;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Consumer;
 
+import com.google.protobuf.ByteString;
 import io.atomix.primitive.PrimitiveState;
 import io.atomix.primitive.PrimitiveType;
 import io.atomix.primitive.event.EventType;
@@ -25,6 +26,7 @@ import io.atomix.primitive.event.PrimitiveEvent;
 import io.atomix.primitive.operation.OperationDecoder;
 import io.atomix.primitive.operation.OperationEncoder;
 import io.atomix.primitive.operation.OperationId;
+import io.atomix.primitive.operation.OperationMetadata;
 import io.atomix.primitive.operation.PrimitiveOperation;
 import io.atomix.primitive.partition.PartitionId;
 import io.atomix.utils.concurrent.ThreadContext;
@@ -100,7 +102,13 @@ public interface SessionClient {
       OperationId operationId, T operation, OperationEncoder<T> encoder, OperationDecoder<U> decoder) {
     return CompletableFuture.completedFuture(operation)
         .thenApply(object -> OperationEncoder.encode(object, encoder))
-        .thenCompose(bytes -> execute(PrimitiveOperation.newBuilder().build()))
+        .thenCompose(bytes -> execute(PrimitiveOperation.newBuilder()
+            .setId(OperationMetadata.newBuilder()
+                .setName(operationId.operation())
+                .setType(operationId.type())
+                .build())
+            .setValue(ByteString.copyFrom(bytes))
+            .build()))
         .thenApply(bytes -> OperationDecoder.decode(bytes, decoder));
   }
 

@@ -28,7 +28,6 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.BiConsumer;
 import java.util.function.Predicate;
 
-import com.google.protobuf.Message;
 import io.atomix.primitive.PrimitiveException;
 import io.atomix.primitive.PrimitiveState;
 import io.atomix.primitive.operation.PrimitiveOperation;
@@ -154,7 +153,7 @@ final class RaftSessionInvoker {
    *
    * @param attempt The attempt to submit.
    */
-  private <T extends Message, U extends Message> void invoke(OperationAttempt attempt) {
+  private void invoke(OperationAttempt attempt) {
     if (state.getState() == PrimitiveState.CLOSED) {
       attempt.fail(new PrimitiveException.ClosedSession("session closed"));
     } else {

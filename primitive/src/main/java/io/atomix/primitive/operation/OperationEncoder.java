@@ -33,7 +33,7 @@ public interface OperationEncoder<T> {
    */
   static <T> byte[] encode(T object, OperationEncoder<T> encoder) {
     try {
-      return encoder.encode(object);
+      return object != null ? encoder.encode(object) : new byte[0];
     } catch (Exception e) {
       throw new PrimitiveException.ServiceException(e);
     }

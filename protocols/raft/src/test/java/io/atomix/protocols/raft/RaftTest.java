@@ -1466,7 +1466,7 @@ public class RaftTest extends ConcurrentTestCase {
 
     @Override
     public CompletableFuture<Void> onClose(Consumer<Long> callback) {
-      closeListeners.add(callback);;
+      closeListeners.add(callback);
       return getClient().execute(CLOSE, OnCloseRequest.newBuilder().build(), OnCloseRequest::toByteArray, OnCloseResponse::parseFrom)
           .thenApply(r -> null);
     }
@@ -1534,7 +1534,7 @@ public class RaftTest extends ConcurrentTestCase {
     @Override
     public void onClose(Session session) {
       if (close != null && !session.sessionId().equals(close)) {
-        getSession(expire).publish(CLOSE_EVENT, TestEvent.newBuilder().setIndex(getCurrentIndex()).build(), TestEvent::toByteArray);
+        getSession(close).publish(CLOSE_EVENT, TestEvent.newBuilder().setIndex(getCurrentIndex()).build(), TestEvent::toByteArray);
       }
     }
 

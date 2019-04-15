@@ -33,7 +33,7 @@ public interface OperationDecoder<T> {
    */
   static <T> T decode(byte[] bytes, OperationDecoder<T> decoder) {
     try {
-      return decoder.decode(bytes);
+      return bytes != null ? decoder.decode(bytes) : null;
     } catch (Exception e) {
       throw new PrimitiveException.ServiceException(e);
     }
