@@ -56,7 +56,6 @@ import io.atomix.primitive.operation.OperationId;
 import io.atomix.primitive.operation.OperationType;
 import io.atomix.primitive.operation.impl.DefaultOperationId;
 import io.atomix.primitive.partition.PartitionId;
-import io.atomix.primitive.protocol.PrimitiveProtocol;
 import io.atomix.primitive.service.AbstractPrimitiveService;
 import io.atomix.primitive.service.PrimitiveService;
 import io.atomix.primitive.service.ServiceExecutor;
@@ -1426,11 +1425,6 @@ public class RaftTest extends ConcurrentTestCase {
       client.addEventListener(CHANGE_EVENT, this::event, TestEvent::parseFrom);
       client.addEventListener(EXPIRE_EVENT, this::expire, TestEvent::parseFrom);
       client.addEventListener(CLOSE_EVENT, this::close, TestEvent::parseFrom);
-    }
-
-    @Override
-    public PrimitiveProtocol protocol() {
-      throw new UnsupportedOperationException();
     }
 
     @Override

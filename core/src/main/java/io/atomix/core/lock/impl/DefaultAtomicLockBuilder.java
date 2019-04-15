@@ -22,6 +22,7 @@ import io.atomix.core.lock.AtomicLock;
 import io.atomix.core.lock.AtomicLockBuilder;
 import io.atomix.core.lock.AtomicLockConfig;
 import io.atomix.primitive.PrimitiveManagementService;
+import io.atomix.primitive.protocol.ProxyProtocol;
 
 /**
  * Default distributed lock builder implementation.
@@ -34,8 +35,15 @@ public class DefaultAtomicLockBuilder extends AtomicLockBuilder {
   @Override
   @SuppressWarnings("unchecked")
   public CompletableFuture<AtomicLock> buildAsync() {
-    return newProxy(AtomicLockService.class)
-        .thenCompose(proxy -> new AtomicLockProxy(proxy, managementService.getPrimitiveRegistry()).connect())
-        .thenApply(AsyncAtomicLock::sync);
+    return managementService.getPrimitiveRegistry().createPrimitive(name, type)
+        .thenCompose(v -> managementService.getPartitionService().getPartitionGroup((ProxyProtocol) protocol())
+            .getPartition(name)
+            .getClient()
+            .sessionBuilder(name, type)
+            .build()
+            .connect()
+            .thenApply(LockProxy::new)
+            .thenApply(DefaultAsyncAtomicLock::new)
+            .thenApply(AsyncAtomicLock::sync));
   }
 }

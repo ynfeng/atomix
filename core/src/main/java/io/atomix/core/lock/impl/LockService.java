@@ -100,11 +100,13 @@ public class LockService extends AbstractLockService {
 
   @Override
   public UnlockResponse unlock(UnlockRequest request) {
-    if (lock != null && (request.getIndex() == 0 || request.getIndex() == lock.index)) {
+    if (lock != null) {
       // If the commit's session does not match the current lock holder, preserve the existing lock.
       // If the current lock ID does not match the requested lock ID, preserve the existing lock.
       // However, ensure the associated lock request is removed from the queue.
-      if (!lock.session.equals(getCurrentSession().sessionId()) || lock.id != request.getId()) {
+      if (!lock.session.equals(getCurrentSession().sessionId())
+          || (request.getId() != 0 && lock.id != request.getId())
+          || (request.getIndex() != 0 && lock.index != request.getIndex())) {
         Iterator<LockHolder> iterator = queue.iterator();
         while (iterator.hasNext()) {
           LockHolder lock = iterator.next();

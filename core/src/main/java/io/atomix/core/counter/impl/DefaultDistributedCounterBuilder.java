@@ -42,18 +42,26 @@ public class DefaultDistributedCounterBuilder extends DistributedCounterBuilder 
     PrimitiveProtocol protocol = protocol();
     if (protocol instanceof GossipProtocol) {
       if (protocol instanceof CounterProtocol) {
-        return managementService.getPrimitiveCache().getPrimitive(name, () -> CompletableFuture.completedFuture(
-            new GossipDistributedCounter(name, (GossipProtocol) protocol, ((CounterProtocol) protocol)
-                .newCounterDelegate(name, managementService))))
-            .thenApply(AsyncDistributedCounter::sync);
+        return managementService.getPrimitiveRegistry().createPrimitive(name, type)
+            .thenCompose(v -> managementService.getPrimitiveCache().getPrimitive(name, () -> CompletableFuture.completedFuture(
+                new GossipDistributedCounter(name, ((CounterProtocol) protocol)
+                    .newCounterDelegate(name, managementService))))
+                .thenApply(AsyncDistributedCounter::sync));
       } else {
         return Futures.exceptionalFuture(new UnsupportedOperationException("Counter is not supported by the provided gossip protocol"));
       }
     } else if (protocol instanceof ProxyProtocol) {
-      return newProxy(AtomicCounterService.class)
-          .thenCompose(proxy -> new DefaultAsyncAtomicCounter(proxy, managementService.getPrimitiveRegistry()).connect())
-          .thenApply(DelegatingDistributedCounter::new)
-          .thenApply(AsyncDistributedCounter::sync);
+      return managementService.getPrimitiveRegistry().createPrimitive(name, type)
+          .thenCompose(v -> managementService.getPartitionService().getPartitionGroup((ProxyProtocol) protocol())
+              .getPartition(name)
+              .getClient()
+              .sessionBuilder(name, type)
+              .build()
+              .connect()
+              .thenApply(CounterProxy::new)
+              .thenApply(DefaultAsyncAtomicCounter::new)
+              .thenApply(DelegatingDistributedCounter::new)
+              .thenApply(AsyncDistributedCounter::sync));
     } else {
       return Futures.exceptionalFuture(new ConfigurationException("Invalid protocol type"));
     }

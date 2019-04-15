@@ -41,6 +41,13 @@ public class CounterService extends AbstractCounterService {
   }
 
   @Override
+  public CheckAndSetResponse checkAndSet(CheckAndSetRequest request) {
+    return CheckAndSetResponse.newBuilder()
+        .setSucceeded(counter.compareAndSet(request.getExpect(), request.getUpdate()))
+        .build();
+  }
+
+  @Override
   public IncrementResponse increment(IncrementRequest request) {
     long previousValue;
     if (request.getDelta() == 0) {

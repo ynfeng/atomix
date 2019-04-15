@@ -34,7 +34,7 @@ public class DefaultDistributedLockBuilder extends DistributedLockBuilder {
   @SuppressWarnings("unchecked")
   public CompletableFuture<DistributedLock> buildAsync() {
     return newProxy(AtomicLockService.class)
-        .thenCompose(proxy -> new AtomicLockProxy(proxy, managementService.getPrimitiveRegistry()).connect())
+        .thenCompose(proxy -> new DefaultAsyncAtomicLock(proxy, managementService.getPrimitiveRegistry()).connect())
         .thenApply(lock -> new DelegatingAsyncDistributedLock(lock).sync());
   }
 }

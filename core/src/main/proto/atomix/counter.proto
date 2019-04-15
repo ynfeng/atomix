@@ -47,6 +47,15 @@ message SetResponse {
     int64 previous_value = 1;
 }
 
+message CheckAndSetRequest {
+    int64 expect = 1;
+    int64 update = 2;
+}
+
+message CheckAndSetResponse {
+    bool succeeded = 1;
+}
+
 service CounterService {
     option (atomix.primitive.service.base_name) = "Counter";
 
@@ -74,6 +83,13 @@ service CounterService {
     rpc Decrement(DecrementRequest) returns (DecrementResponse) {
         option (atomix.primitive.service.operation) = {
             name: "decrement"
+            type: COMMAND
+        };
+    }
+
+    rpc CheckAndSet(CheckAndSetRequest) returns (CheckAndSetResponse) {
+        option(atomix.primitive.service.operation) = {
+            name: "cas"
             type: COMMAND
         };
     }

@@ -1,8 +1,10 @@
 package io.atomix.primitive;
 
 import java.util.concurrent.CompletableFuture;
+import java.util.function.Consumer;
 
 import io.atomix.primitive.session.SessionClient;
+import io.atomix.utils.concurrent.ThreadContext;
 
 /**
  * Base class for primitive proxies.
@@ -30,6 +32,15 @@ public abstract class AbstractPrimitiveProxy {
    */
   public PrimitiveType type() {
     return client.type();
+  }
+
+  /**
+   * Returns the proxy thread context.
+   *
+   * @return the proxy thread context
+   */
+  public ThreadContext context() {
+    return client.context();
   }
 
   /**
@@ -67,5 +78,23 @@ public abstract class AbstractPrimitiveProxy {
    */
   public CompletableFuture<Void> delete() {
     return client.delete();
+  }
+
+  /**
+   * Returns the current primitive state.
+   *
+   * @return the current primitive state
+   */
+  public PrimitiveState getState() {
+    return client.getState();
+  }
+
+  /**
+   * Adds a state change listener to the proxy.
+   *
+   * @param listener the listener to add
+   */
+  public void onStateChange(Consumer<PrimitiveState> listener) {
+    client.addStateChangeListener(listener);
   }
 }

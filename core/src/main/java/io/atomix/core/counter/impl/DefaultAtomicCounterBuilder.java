@@ -22,6 +22,7 @@ import io.atomix.core.counter.AtomicCounter;
 import io.atomix.core.counter.AtomicCounterBuilder;
 import io.atomix.core.counter.AtomicCounterConfig;
 import io.atomix.primitive.PrimitiveManagementService;
+import io.atomix.primitive.protocol.ProxyProtocol;
 
 /**
  * Atomic counter proxy builder.
@@ -34,8 +35,15 @@ public class DefaultAtomicCounterBuilder extends AtomicCounterBuilder {
   @Override
   @SuppressWarnings("unchecked")
   public CompletableFuture<AtomicCounter> buildAsync() {
-    return newProxy(AtomicCounterService.class)
-        .thenCompose(proxy -> new DefaultAsyncAtomicCounter(proxy, managementService.getPrimitiveRegistry()).connect())
-        .thenApply(AsyncAtomicCounter::sync);
+    return managementService.getPrimitiveRegistry().createPrimitive(name, type)
+        .thenCompose(v -> managementService.getPartitionService().getPartitionGroup((ProxyProtocol) protocol())
+            .getPartition(name)
+            .getClient()
+            .sessionBuilder(name, type)
+            .build()
+            .connect()
+            .thenApply(CounterProxy::new)
+            .thenApply(DefaultAsyncAtomicCounter::new)
+            .thenApply(AsyncAtomicCounter::sync));
   }
 }
