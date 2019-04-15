@@ -29,6 +29,7 @@ import io.atomix.primitive.operation.OperationId;
 import io.atomix.primitive.operation.OperationMetadata;
 import io.atomix.primitive.operation.PrimitiveOperation;
 import io.atomix.primitive.partition.PartitionId;
+import io.atomix.utils.concurrent.OrderedFuture;
 import io.atomix.utils.concurrent.ThreadContext;
 
 /**
@@ -100,7 +101,7 @@ public interface SessionClient {
    */
   default <T, U> CompletableFuture<U> execute(
       OperationId operationId, T operation, OperationEncoder<T> encoder, OperationDecoder<U> decoder) {
-    return CompletableFuture.completedFuture(operation)
+    return OrderedFuture.wrap(CompletableFuture.completedFuture(operation))
         .thenApply(object -> OperationEncoder.encode(object, encoder))
         .thenCompose(bytes -> execute(PrimitiveOperation.newBuilder()
             .setId(OperationMetadata.newBuilder()

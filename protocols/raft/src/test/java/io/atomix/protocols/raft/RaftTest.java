@@ -1511,10 +1511,6 @@ public class RaftTest extends ConcurrentTestCase {
     private SessionId expire;
     private SessionId close;
 
-    public TestPrimitiveServiceImpl() {
-      super(TestPrimitiveType.INSTANCE);
-    }
-
     @Override
     protected void configure(ServiceExecutor executor) {
       executor.register(WRITE, this::write, WriteRequest::parseFrom, WriteResponse::toByteArray);

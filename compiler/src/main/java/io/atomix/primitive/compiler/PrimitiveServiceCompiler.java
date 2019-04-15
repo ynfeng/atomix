@@ -40,10 +40,12 @@ import org.apache.commons.lang3.tuple.Pair;
 public class PrimitiveServiceCompiler {
 
   private static final String OPERATIONS_TEMPLATE = "operations.ftlh";
+  private static final String EVENTS_TEMPLATE = "events.ftlh";
   private static final String SERVICE_TEMPLATE = "service.ftlh";
   private static final String PROXY_TEMPLATE = "proxy.ftlh";
 
   private static final String OPERATIONS_SUFFIX = "Operations";
+  private static final String EVENTS_SUFFIX = "Events";
   private static final String SERVICE_SUFFIX = "Service";
   private static final String PROXY_SUFFIX = "Proxy";
   private static final String ABSTRACT_PREFIX = "Abstract";
@@ -81,25 +83,38 @@ public class PrimitiveServiceCompiler {
       ServiceDescriptor serviceContext = buildServiceContext(serviceDescriptor, fileDescriptor, messages);
 
       // Compile the primitive operations.
-      compile(
-          OPERATIONS_TEMPLATE,
-          serviceContext.getOperationsClass(),
-          serviceContext,
-          response);
+      if (!serviceContext.getOperations().isEmpty()) {
+        compile(
+            OPERATIONS_TEMPLATE,
+            serviceContext.getOperationsClass(),
+            serviceContext,
+            response);
+      }
 
-      // Compile the primitive service base class.
-      compile(
-          SERVICE_TEMPLATE,
-          serviceContext.getServiceClass(),
-          serviceContext,
-          response);
+      // Compile the primitive events.
+      if (!serviceContext.getEvents().isEmpty()) {
+        compile(
+            EVENTS_TEMPLATE,
+            serviceContext.getEventsClass(),
+            serviceContext,
+            response);
+      }
 
-      // Compile the proxy class.
-      compile(
-          PROXY_TEMPLATE,
-          serviceContext.getProxyClass(),
-          serviceContext,
-          response);
+      if (!serviceContext.getOperations().isEmpty()) {
+        // Compile the primitive service base class.
+        compile(
+            SERVICE_TEMPLATE,
+            serviceContext.getServiceClass(),
+            serviceContext,
+            response);
+
+        // Compile the proxy class.
+        compile(
+            PROXY_TEMPLATE,
+            serviceContext.getProxyClass(),
+            serviceContext,
+            response);
+      }
     }
   }
 
@@ -151,9 +166,13 @@ public class PrimitiveServiceCompiler {
     context.setServiceClass(buildServiceClassDescriptor(serviceDescriptor, fileDescriptor));
     context.setProxyClass(buildProxyClassDescriptor(serviceDescriptor, fileDescriptor));
     context.setOperationsClass(buildOperationsClassDescriptor(serviceDescriptor, fileDescriptor));
+    context.setEventsClass(buildEventsClassDescriptor(serviceDescriptor, fileDescriptor));
     for (DescriptorProtos.MethodDescriptorProto methodDescriptor : serviceDescriptor.getMethodList()) {
       if (isOperationMethod(methodDescriptor)) {
         context.addOperation(buildOperationDescriptor(methodDescriptor, serviceDescriptor, fileDescriptor, messages));
+      }
+      if (isEventMethod(methodDescriptor)) {
+        context.addEvent(buildEventDescriptor(methodDescriptor, serviceDescriptor, fileDescriptor, messages));
       }
     }
     return context;
@@ -211,6 +230,23 @@ public class PrimitiveServiceCompiler {
   }
 
   /**
+   * Builds an class descriptor for the given service events.
+   *
+   * @param serviceDescriptor the service descriptor
+   * @param fileDescriptor    the descriptor for the file to which the service belongs
+   * @return the generated class descriptor
+   */
+  private ClassDescriptor buildEventsClassDescriptor(
+      DescriptorProtos.ServiceDescriptorProto serviceDescriptor,
+      DescriptorProtos.FileDescriptorProto fileDescriptor) {
+    ClassDescriptor eventsClass = new ClassDescriptor();
+    eventsClass.setJavaPackage(getPackageName(fileDescriptor));
+    eventsClass.setFileName(getFilePath(EVENTS_SUFFIX, serviceDescriptor, fileDescriptor));
+    eventsClass.setClassName(getSuffixedClassName(EVENTS_SUFFIX, serviceDescriptor));
+    return eventsClass;
+  }
+
+  /**
    * Builds an class descriptor for the given service message.
    *
    * @param messageDescriptor the message descriptor
@@ -244,12 +280,37 @@ public class PrimitiveServiceCompiler {
     OperationDescriptor operation = new OperationDescriptor();
     operation.setMethodName(getMethodName(methodDescriptor));
     operation.setRequestClass(buildMessageClassDescriptor(inputType.getRight(), inputType.getLeft()));
-    operation.setResponseClass(buildMessageClassDescriptor(outputType.getRight(), outputType.getLeft()));
+    if (!isEventMethod(methodDescriptor)) {
+      operation.setResponseClass(buildMessageClassDescriptor(outputType.getRight(), outputType.getLeft()));
+    }
     operation.setOperationsClass(buildOperationsClassDescriptor(serviceDescriptor, fileDescriptor));
     operation.setType(getOperationType(methodDescriptor));
     operation.setName(getOperationName(methodDescriptor));
     operation.setEnumValue(getOperationEnumValue(methodDescriptor));
     return operation;
+  }
+
+  /**
+   * Builds a descriptor for the given service operation.
+   *
+   * @param methodDescriptor the method descriptor
+   * @param messages         the message lookup table
+   * @return the generated method
+   */
+  private EventDescriptor buildEventDescriptor(
+      DescriptorProtos.MethodDescriptorProto methodDescriptor,
+      DescriptorProtos.ServiceDescriptorProto serviceDescriptor,
+      DescriptorProtos.FileDescriptorProto fileDescriptor,
+      MessageTable messages) {
+    Pair<DescriptorProtos.FileDescriptorProto, DescriptorProtos.DescriptorProto> outputType = messages.get(methodDescriptor.getOutputType());
+    EventDescriptor event = new EventDescriptor();
+    event.setMethodName(getEventMethodName(methodDescriptor));
+    event.setValueClass(buildMessageClassDescriptor(outputType.getRight(), outputType.getLeft()));
+    event.setEventsClass(buildEventsClassDescriptor(serviceDescriptor, fileDescriptor));
+    event.setType(getOperationType(methodDescriptor));
+    event.setName(getOperationName(methodDescriptor));
+    event.setEnumValue(getOperationEnumValue(methodDescriptor));
+    return event;
   }
 
   /**
@@ -260,6 +321,17 @@ public class PrimitiveServiceCompiler {
    */
   private boolean isOperationMethod(DescriptorProtos.MethodDescriptorProto methodDescriptor) {
     return methodDescriptor.getOptions().hasExtension(PrimitiveServiceProto.operation);
+  }
+
+  /**
+   * Returns a boolean indicating whether the given descriptor is for a primitive event.
+   *
+   * @param methodDescriptor the method descriptor
+   * @return indicates whether the given descriptor is a primitive event
+   */
+  private boolean isEventMethod(DescriptorProtos.MethodDescriptorProto methodDescriptor) {
+    return methodDescriptor.getOptions().hasExtension(PrimitiveServiceProto.operation)
+        && methodDescriptor.getServerStreaming();
   }
 
   /**
@@ -394,6 +466,16 @@ public class PrimitiveServiceCompiler {
   }
 
   /**
+   * Returns the Java method name for the given method descriptor.
+   *
+   * @param methodDescriptor the method descriptor
+   * @return the Java method name
+   */
+  private static String getEventMethodName(DescriptorProtos.MethodDescriptorProto methodDescriptor) {
+    return "on" + methodDescriptor.getName();
+  }
+
+  /**
    * Returns the Java message type name for the given Protobuf message type.
    *
    * @param typeName the Protobuf type name
@@ -491,7 +573,9 @@ public class PrimitiveServiceCompiler {
     private ClassDescriptor serviceClass;
     private ClassDescriptor proxyClass;
     private ClassDescriptor operationsClass;
+    private ClassDescriptor eventsClass;
     private List<OperationDescriptor> operations = new ArrayList<>();
+    private List<EventDescriptor> events = new ArrayList<>();
 
     public ClassDescriptor getServiceClass() {
       return serviceClass;
@@ -517,6 +601,14 @@ public class PrimitiveServiceCompiler {
       this.operationsClass = operationsClass;
     }
 
+    public ClassDescriptor getEventsClass() {
+      return eventsClass;
+    }
+
+    public void setEventsClass(ClassDescriptor eventsClass) {
+      this.eventsClass = eventsClass;
+    }
+
     public List<OperationDescriptor> getOperations() {
       return operations;
     }
@@ -527,6 +619,18 @@ public class PrimitiveServiceCompiler {
 
     public void addOperation(OperationDescriptor operation) {
       operations.add(operation);
+    }
+
+    public List<EventDescriptor> getEvents() {
+      return events;
+    }
+
+    public void setEvents(List<EventDescriptor> events) {
+      this.events = events;
+    }
+
+    public void addEvent(EventDescriptor event) {
+      events.add(event);
     }
   }
 
@@ -606,6 +710,64 @@ public class PrimitiveServiceCompiler {
 
     public void setOperationsClass(ClassDescriptor operationsClass) {
       this.operationsClass = operationsClass;
+    }
+
+    public String getType() {
+      return type;
+    }
+
+    public void setType(String type) {
+      this.type = type;
+    }
+
+    public String getName() {
+      return name;
+    }
+
+    public void setName(String name) {
+      this.name = name;
+    }
+
+    public String getEnumValue() {
+      return enumValue;
+    }
+
+    public void setEnumValue(String enumValue) {
+      this.enumValue = enumValue;
+    }
+  }
+
+  public static class EventDescriptor {
+    private String methodName;
+    private String producerMethodName;
+    private ClassDescriptor valueClass;
+    private ClassDescriptor eventsClass;
+    private String type;
+    private String name;
+    private String enumValue;
+
+    public String getMethodName() {
+      return methodName;
+    }
+
+    public void setMethodName(String methodName) {
+      this.methodName = methodName;
+    }
+
+    public ClassDescriptor getValueClass() {
+      return valueClass;
+    }
+
+    public void setValueClass(ClassDescriptor valueClass) {
+      this.valueClass = valueClass;
+    }
+
+    public ClassDescriptor getEventsClass() {
+      return eventsClass;
+    }
+
+    public void setEventsClass(ClassDescriptor eventsClass) {
+      this.eventsClass = eventsClass;
     }
 
     public String getType() {

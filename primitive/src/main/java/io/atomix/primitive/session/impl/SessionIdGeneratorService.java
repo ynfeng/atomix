@@ -31,10 +31,6 @@ import io.atomix.primitive.session.impl.proto.SessionIdGeneratorSnapshot;
 public class SessionIdGeneratorService extends AbstractPrimitiveService {
   private long id;
 
-  public SessionIdGeneratorService() {
-    super(SessionIdGeneratorType.instance());
-  }
-
   @Override
   public void backup(OutputStream output) throws IOException {
     SessionIdGeneratorSnapshot.newBuilder()

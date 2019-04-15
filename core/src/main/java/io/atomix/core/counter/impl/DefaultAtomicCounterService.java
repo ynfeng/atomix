@@ -20,7 +20,6 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.util.concurrent.atomic.AtomicLong;
 
-import io.atomix.core.counter.AtomicCounterType;
 import io.atomix.primitive.service.AbstractPrimitiveService;
 
 /**
@@ -28,10 +27,6 @@ import io.atomix.primitive.service.AbstractPrimitiveService;
  */
 public class DefaultAtomicCounterService extends AbstractPrimitiveService implements AtomicCounterService {
   private final AtomicLong counter = new AtomicLong();
-
-  public DefaultAtomicCounterService() {
-    super(AtomicCounterType.instance());
-  }
 
   @Override
   public void backup(OutputStream output) throws IOException {

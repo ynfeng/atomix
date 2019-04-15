@@ -587,10 +587,6 @@ public class PrimaryBackupTest extends ConcurrentTestCase {
     private SessionId expire;
     private SessionId close;
 
-    public TestPrimitiveService() {
-      super(TestPrimitiveType.INSTANCE);
-    }
-
     @Override
     protected void configure(ServiceExecutor executor) {
       executor.register(new DefaultOperationId(WRITE.getName(), WRITE.getType()), this::write, WriteRequest::parseFrom, WriteResponse::toByteArray);

@@ -36,9 +36,9 @@ import io.atomix.primitive.PrimitiveManagementService;
 import io.atomix.primitive.PrimitiveType;
 import io.atomix.primitive.PrimitiveTypeRegistry;
 import io.atomix.primitive.config.PrimitiveConfig;
-import io.atomix.primitive.operation.impl.DefaultOperationId;
 import io.atomix.primitive.operation.OperationId;
 import io.atomix.primitive.operation.OperationType;
+import io.atomix.primitive.operation.impl.DefaultOperationId;
 import io.atomix.primitive.service.AbstractPrimitiveService;
 import io.atomix.primitive.service.PrimitiveService;
 import io.atomix.primitive.service.ServiceExecutor;
@@ -160,10 +160,6 @@ public class RaftServiceManagerTest {
   private static final OperationId RUN = new DefaultOperationId("run", OperationType.COMMAND);
 
   private class TestService extends AbstractPrimitiveService {
-    protected TestService(PrimitiveType primitiveType) {
-      super(primitiveType);
-    }
-
     @Override
     protected void configure(ServiceExecutor executor) {
       executor.register(RUN, this::run);
@@ -197,7 +193,7 @@ public class RaftServiceManagerTest {
 
     @Override
     public PrimitiveService newService() {
-      return new TestService(this);
+      return new TestService();
     }
 
     @Override

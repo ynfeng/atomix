@@ -19,18 +19,21 @@ package ${serviceClass.javaPackage};
  * Atomix generated service interface ${serviceClass.className}.
  */
 public abstract class ${serviceClass.className} extends io.atomix.primitive.service.AbstractPrimitiveService {
-    protected ${serviceClass.className}(io.atomix.primitive.PrimitiveType primitiveType) {
-        super(primitiveType);
-    }
-
     @Override
     protected void configure(io.atomix.primitive.service.ServiceExecutor executor) {
         <#list operations as operation>
+        <#if operation.responseClass??>
         executor.register(
             ${operation.operationsClass.qualifiedName}.${operation.enumValue},
             this::${operation.methodName},
             ${operation.requestClass.qualifiedName}::parseFrom,
             ${operation.responseClass.qualifiedName}::toByteArray);
+        <#else>
+        executor.register(
+            ${operation.operationsClass.qualifiedName}.${operation.enumValue},
+            this::${operation.methodName},
+            ${operation.requestClass.qualifiedName}::parseFrom);
+         </#if>
          </#list>
     }
 
@@ -41,7 +44,23 @@ public abstract class ${serviceClass.className} extends io.atomix.primitive.serv
      * @param request the request object
      * @return the response object
      */
+    <#if operation.responseClass??>
     public abstract ${operation.responseClass.qualifiedName} ${operation.methodName}(${operation.requestClass.qualifiedName} request);
+    <#else>
+    public abstract void ${operation.methodName}(${operation.requestClass.qualifiedName} request);
+    </#if>
+
+    </#list>
+
+    <#list events as event>
+    /**
+     * Atomix generated event producer method.
+     *
+     * @param event the event to produce
+     */
+    protected void ${event.methodName}(io.atomix.primitive.session.SessionId sessionId, ${event.valueClass.qualifiedName} event) {
+        getSession(sessionId).publish(${event.eventsClass.qualifiedName}.${event.enumValue}, event, ${event.valueClass.qualifiedName}::toByteArray);
+    }
 
     </#list>
 }

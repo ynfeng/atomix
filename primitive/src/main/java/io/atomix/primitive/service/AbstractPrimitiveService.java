@@ -21,7 +21,6 @@ import java.util.Map;
 import com.google.common.collect.Maps;
 import io.atomix.cluster.MemberId;
 import io.atomix.primitive.PrimitiveId;
-import io.atomix.primitive.PrimitiveType;
 import io.atomix.primitive.event.PrimitiveEvent;
 import io.atomix.primitive.service.impl.DefaultServiceExecutor;
 import io.atomix.primitive.session.Session;
@@ -39,15 +38,10 @@ import org.slf4j.Logger;
  * Raft service.
  */
 public abstract class AbstractPrimitiveService implements PrimitiveService {
-  private final PrimitiveType primitiveType;
   private Logger log;
   private ServiceContext context;
   private ServiceExecutor executor;
   private final Map<SessionId, Session> sessions = Maps.newHashMap();
-
-  protected AbstractPrimitiveService(PrimitiveType primitiveType) {
-    this.primitiveType = primitiveType;
-  }
 
   @Override
   public final void init(ServiceContext context) {
@@ -81,15 +75,6 @@ public abstract class AbstractPrimitiveService implements PrimitiveService {
    * @param executor The state machine executor.
    */
   protected abstract void configure(ServiceExecutor executor);
-
-  /**
-   * Returns the primitive type.
-   *
-   * @return the primitive type
-   */
-  protected PrimitiveType getPrimitiveType() {
-    return primitiveType;
-  }
 
   /**
    * Returns the service logger.

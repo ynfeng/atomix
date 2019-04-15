@@ -61,10 +61,6 @@ public class PrimaryElectorService extends AbstractPrimitiveService {
   private Map<Long, Session> listeners = new LinkedHashMap<>();
   private Scheduled rebalanceTimer;
 
-  public PrimaryElectorService() {
-    super(PrimaryElectorType.instance());
-  }
-
   @Override
   public void backup(OutputStream output) throws IOException {
     PrimaryElectorSnapshot.newBuilder()

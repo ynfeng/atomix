@@ -24,12 +24,13 @@ message LockCall {
 
 message LockRequest {
     int32 id = 1;
-    int64 expire = 2;
+    int64 timeout = 2;
 }
 
 message LockResponse {
-    int64 index = 1;
-    bool acquired = 2;
+    int32 id = 1;
+    int64 index = 2;
+    bool acquired = 3;
 }
 
 message UnlockRequest {
