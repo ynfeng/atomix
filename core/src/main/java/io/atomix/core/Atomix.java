@@ -41,7 +41,6 @@ import io.atomix.cluster.messaging.ManagedMessagingService;
 import io.atomix.cluster.messaging.ManagedUnicastService;
 import io.atomix.cluster.protocol.GroupMembershipProtocol;
 import io.atomix.cluster.protocol.GroupMembershipProtocolConfig;
-import io.atomix.core.barrier.DistributedCyclicBarrier;
 import io.atomix.core.counter.AtomicCounter;
 import io.atomix.core.counter.DistributedCounter;
 import io.atomix.core.election.LeaderElection;
@@ -749,12 +748,6 @@ public class Atomix extends AtomixCluster implements PrimitivesService {
   public AtomicLock getAtomicLock(String name) {
     checkRunning();
     return primitives.getAtomicLock(name);
-  }
-
-  @Override
-  public DistributedCyclicBarrier getCyclicBarrier(String name) {
-    checkRunning();
-    return primitives.getCyclicBarrier(name);
   }
 
   @Override

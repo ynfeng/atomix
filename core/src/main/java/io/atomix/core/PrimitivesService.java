@@ -15,9 +15,6 @@
  */
 package io.atomix.core;
 
-import io.atomix.core.barrier.DistributedCyclicBarrier;
-import io.atomix.core.barrier.DistributedCyclicBarrierBuilder;
-import io.atomix.core.barrier.DistributedCyclicBarrierType;
 import io.atomix.core.counter.AtomicCounter;
 import io.atomix.core.counter.AtomicCounterBuilder;
 import io.atomix.core.counter.AtomicCounterType;
@@ -34,8 +31,6 @@ import io.atomix.core.list.DistributedList;
 import io.atomix.core.list.DistributedListBuilder;
 import io.atomix.core.list.DistributedListType;
 import io.atomix.core.lock.AtomicLock;
-import io.atomix.core.lock.AtomicLockBuilder;
-import io.atomix.core.lock.AtomicLockType;
 import io.atomix.core.lock.DistributedLock;
 import io.atomix.core.lock.DistributedLockBuilder;
 import io.atomix.core.lock.DistributedLockType;
@@ -678,50 +673,6 @@ public interface PrimitivesService extends PrimitiveFactory {
    */
   default DistributedLockBuilder lockBuilder(String name) {
     return primitiveBuilder(name, DistributedLockType.instance());
-  }
-
-  /**
-   * Creates a new named {@link AtomicLock} builder.
-   * <p>
-   * The lock name must be provided when constructing the builder. The name is used to reference a distinct instance of
-   * the primitive within the cluster. Multiple instances of the primitive with the same name will share the same state.
-   * However, the instance of the primitive constructed by the returned builder will be distinct and will not share
-   * local memory (e.g. cache) with any other instance on this node.
-   * <p>
-   * To get an asynchronous instance of the lock, use the {@link SyncPrimitive#async()} method:
-   * <pre>
-   *   {@code
-   *   AsyncAtomicLock lock = atomix.atomicLockBuilder("my-lock").build().async();
-   *   }
-   * </pre>
-   *
-   * @param name the primitive name
-   * @return distributed lock builder
-   */
-  default AtomicLockBuilder atomicLockBuilder(String name) {
-    return primitiveBuilder(name, AtomicLockType.instance());
-  }
-
-  /**
-   * Creates a new named {@link DistributedCyclicBarrier} builder.
-   * <p>
-   * The barrier name must be provided when constructing the builder. The name is used to reference a distinct instance of
-   * the primitive within the cluster. Multiple instances of the primitive with the same name will share the same state.
-   * However, the instance of the primitive constructed by the returned builder will be distinct and will not share
-   * local memory (e.g. cache) with any other instance on this node.
-   * <p>
-   * To get an asynchronous instance of the barrier, use the {@link SyncPrimitive#async()} method:
-   * <pre>
-   *   {@code
-   *   AsyncDistributedCyclicBarrier barrier = atomix.cyclicBarrierBuilder("my-barrier").build().async();
-   *   }
-   * </pre>
-   *
-   * @param name the primitive name
-   * @return distributed cyclic barrier builder
-   */
-  default DistributedCyclicBarrierBuilder cyclicBarrierBuilder(String name) {
-    return primitiveBuilder(name, DistributedCyclicBarrierType.instance());
   }
 
   /**
@@ -1423,30 +1374,6 @@ public interface PrimitivesService extends PrimitiveFactory {
    */
   @Deprecated
   AtomicLock getAtomicLock(String name);
-
-  /**
-   * Gets or creates a {@link DistributedCyclicBarrier}.
-   * <p>
-   * A new primitive will be created if no primitive instance with the given {@code name} exists on this node, otherwise
-   * the existing instance will be returned. The name is used to reference a distinct instance of the primitive within
-   * the cluster. The returned primitive will share the same state with primitives of the same name on other nodes.
-   * <p>
-   * When the instance is initially constructed, it will be configured with any pre-existing primitive configuration
-   * defined in {@code atomix.conf}.
-   * <p>
-   * To get an asynchronous instance of the barrier, use the {@link SyncPrimitive#async()} method:
-   * <pre>
-   *   {@code
-   *   AsyncDistributedCyclicBarrier barrier = atomix.getCyclicBarrier("my-barrier").async();
-   *   }
-   * </pre>
-   *
-   * @param name the primitive name
-   * @return the cyclic barrier
-   * @deprecated since 3.1; use {@link PrimitiveBuilder#get()}
-   */
-  @Deprecated
-  DistributedCyclicBarrier getCyclicBarrier(String name);
 
   /**
    * Gets or creates a {@link DistributedSemaphore}.
