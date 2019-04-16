@@ -18,6 +18,14 @@ message PrimitiveOperation {
     atomix.primitive.operation.OperationType type = 2;
 }
 
+message PrimitiveEvent {
+    string name = 1;
+}
+
+message EventListener {
+}
+
 extend google.protobuf.MethodOptions {
     PrimitiveOperation operation = 50002;
+    PrimitiveEvent event = 50003;
 }

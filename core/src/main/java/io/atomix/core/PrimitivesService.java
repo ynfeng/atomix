@@ -75,15 +75,9 @@ import io.atomix.core.semaphore.AtomicSemaphoreType;
 import io.atomix.core.semaphore.DistributedSemaphore;
 import io.atomix.core.semaphore.DistributedSemaphoreBuilder;
 import io.atomix.core.semaphore.DistributedSemaphoreType;
-import io.atomix.core.set.DistributedNavigableSet;
-import io.atomix.core.set.DistributedNavigableSetBuilder;
-import io.atomix.core.set.DistributedNavigableSetType;
 import io.atomix.core.set.DistributedSet;
 import io.atomix.core.set.DistributedSetBuilder;
 import io.atomix.core.set.DistributedSetType;
-import io.atomix.core.set.DistributedSortedSet;
-import io.atomix.core.set.DistributedSortedSetBuilder;
-import io.atomix.core.set.DistributedSortedSetType;
 import io.atomix.core.transaction.TransactionBuilder;
 import io.atomix.core.tree.AtomicDocumentTree;
 import io.atomix.core.tree.AtomicDocumentTreeBuilder;
@@ -402,52 +396,6 @@ public interface PrimitivesService extends PrimitiveFactory {
    */
   default <E> DistributedSetBuilder<E> setBuilder(String name) {
     return primitiveBuilder(name, DistributedSetType.instance());
-  }
-
-  /**
-   * Creates a new named {@link DistributedSortedSet} builder.
-   * <p>
-   * The set name must be provided when constructing the builder. The name is used to reference a distinct instance of
-   * the primitive within the cluster. Multiple instances of the primitive with the same name will share the same state.
-   * However, the instance of the primitive constructed by the returned builder will be distinct and will not share
-   * local memory (e.g. cache) with any other instance on this node.
-   * <p>
-   * To get an asynchronous instance of the set, use the {@link SyncPrimitive#async()} method:
-   * <pre>
-   *   {@code
-   *   AsyncDistributedSortedSet<String> set = atomix.<String>sortedSetBuilder("my-set").build().async();
-   *   }
-   * </pre>
-   *
-   * @param name the primitive name
-   * @param <E> set element type
-   * @return builder for a distributed set
-   */
-  default <E extends Comparable<E>> DistributedSortedSetBuilder<E> sortedSetBuilder(String name) {
-    return primitiveBuilder(name, DistributedSortedSetType.instance());
-  }
-
-  /**
-   * Creates a new named {@link DistributedNavigableSet} builder.
-   * <p>
-   * The set name must be provided when constructing the builder. The name is used to reference a distinct instance of
-   * the primitive within the cluster. Multiple instances of the primitive with the same name will share the same state.
-   * However, the instance of the primitive constructed by the returned builder will be distinct and will not share
-   * local memory (e.g. cache) with any other instance on this node.
-   * <p>
-   * To get an asynchronous instance of the set, use the {@link SyncPrimitive#async()} method:
-   * <pre>
-   *   {@code
-   *   AsyncDistributedNavigableSet<String> set = atomix.<String>navigableSetBuilder("my-set").build().async();
-   *   }
-   * </pre>
-   *
-   * @param name the primitive name
-   * @param <E> set element type
-   * @return builder for a distributed set
-   */
-  default <E extends Comparable<E>> DistributedNavigableSetBuilder<E> navigableSetBuilder(String name) {
-    return primitiveBuilder(name, DistributedNavigableSetType.instance());
   }
 
   /**
@@ -1055,56 +1003,6 @@ public interface PrimitivesService extends PrimitiveFactory {
    */
   @Deprecated
   <E> DistributedSet<E> getSet(String name);
-
-  /**
-   * Gets or creates a {@link DistributedSortedSet}.
-   * <p>
-   * A new primitive will be created if no primitive instance with the given {@code name} exists on this node, otherwise
-   * the existing instance will be returned. The name is used to reference a distinct instance of the primitive within
-   * the cluster. The returned primitive will share the same state with primitives of the same name on other nodes.
-   * <p>
-   * When the instance is initially constructed, it will be configured with any pre-existing primitive configuration
-   * defined in {@code atomix.conf}.
-   * <p>
-   * To get an asynchronous instance of the set, use the {@link SyncPrimitive#async()} method:
-   * <pre>
-   *   {@code
-   *   AsyncDistributedSortedSet<String> set = atomix.getSortedSet("my-set").async();
-   *   }
-   * </pre>
-   *
-   * @param name the primitive name
-   * @param <E> set element type
-   * @return a multiton instance of a distributed sorted set
-   * @deprecated since 3.1; use {@link PrimitiveBuilder#get()}
-   */
-  @Deprecated
-  <E extends Comparable<E>> DistributedSortedSet<E> getSortedSet(String name);
-
-  /**
-   * Gets or creates a {@link DistributedNavigableSet}.
-   * <p>
-   * A new primitive will be created if no primitive instance with the given {@code name} exists on this node, otherwise
-   * the existing instance will be returned. The name is used to reference a distinct instance of the primitive within
-   * the cluster. The returned primitive will share the same state with primitives of the same name on other nodes.
-   * <p>
-   * When the instance is initially constructed, it will be configured with any pre-existing primitive configuration
-   * defined in {@code atomix.conf}.
-   * <p>
-   * To get an asynchronous instance of the set, use the {@link SyncPrimitive#async()} method:
-   * <pre>
-   *   {@code
-   *   AsyncDistributedNavigableSet<String> set = atomix.getNavigableSet("my-set").async();
-   *   }
-   * </pre>
-   *
-   * @param name the primitive name
-   * @param <E> set element type
-   * @return a multiton instance of a distributed navigable set
-   * @deprecated since 3.1; use {@link PrimitiveBuilder#get()}
-   */
-  @Deprecated
-  <E extends Comparable<E>> DistributedNavigableSet<E> getNavigableSet(String name);
 
   /**
    * Gets or creates a {@link DistributedQueue}.

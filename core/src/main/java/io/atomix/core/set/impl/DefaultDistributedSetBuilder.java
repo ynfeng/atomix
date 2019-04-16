@@ -15,6 +15,8 @@
  */
 package io.atomix.core.set.impl;
 
+import java.util.HashMap;
+import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 
 import com.google.common.io.BaseEncoding;
@@ -23,10 +25,12 @@ import io.atomix.core.set.DistributedSet;
 import io.atomix.core.set.DistributedSetBuilder;
 import io.atomix.core.set.DistributedSetConfig;
 import io.atomix.primitive.PrimitiveManagementService;
+import io.atomix.primitive.partition.PartitionId;
+import io.atomix.primitive.partition.Partitioner;
 import io.atomix.primitive.protocol.GossipProtocol;
 import io.atomix.primitive.protocol.PrimitiveProtocol;
+import io.atomix.primitive.protocol.ProxyProtocol;
 import io.atomix.primitive.protocol.set.SetProtocol;
-import io.atomix.primitive.proxy.ProxyClient;
 import io.atomix.utils.concurrent.Futures;
 import io.atomix.utils.serializer.Serializer;
 
@@ -54,24 +58,36 @@ public class DefaultDistributedSetBuilder<E> extends DistributedSetBuilder<E> {
         return Futures.exceptionalFuture(new UnsupportedOperationException("Sets are not supported by the provided gossip protocol"));
       }
     } else {
-      return newProxy(DistributedSetService.class)
-          .thenCompose(proxy -> new DistributedSetProxy((ProxyClient) proxy, managementService.getPrimitiveRegistry()).connect())
+      return managementService.getPrimitiveRegistry().createPrimitive(name, type)
+          .thenCompose(v -> {
+            Map<PartitionId, AsyncDistributedSet<String>> partitions = new HashMap<>();
+            return Futures.allOf(managementService.getPartitionService().getPartitionGroup((ProxyProtocol) protocol()).getPartitions().stream()
+                .map(partition -> partition.getClient().sessionBuilder(name, type).build().connect()
+                    .thenApply(session -> new SetProxyImpl(session))
+                    .thenApply(proxy -> partitions.put(partition.id(), new RawAsyncDistributedSet(proxy)))))
+                .thenApply(w -> partitions);
+          })
+          .thenApply(partitions -> new PartitionedAsyncDistributedSet(name, type, partitions, Partitioner.MURMUR3))
           .thenApply(rawSet -> {
             Serializer serializer = serializer();
-            AsyncDistributedSet<E> set = new TranscodingAsyncDistributedSet<>(
+            return new TranscodingAsyncDistributedSet<E, String>(
                 rawSet,
                 element -> BaseEncoding.base16().encode(serializer.encode(element)),
                 string -> serializer.decode(BaseEncoding.base16().decode(string)));
-
+          })
+          .thenApply(set -> {
             if (config.getCacheConfig().isEnabled()) {
-              set = new CachingAsyncDistributedSet<>(set, config.getCacheConfig());
+              return new CachingAsyncDistributedSet<>(set, config.getCacheConfig());
             }
-
+            return set;
+          })
+          .thenApply(set -> {
             if (config.isReadOnly()) {
-              set = new UnmodifiableAsyncDistributedSet<>(set);
+              return new UnmodifiableAsyncDistributedSet<>(set);
             }
-            return set.sync();
-          });
+            return set;
+          })
+          .thenApply(AsyncDistributedSet::sync);
     }
   }
 }
