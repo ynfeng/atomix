@@ -24,7 +24,7 @@
 
   <groupId>com.github.ynfeng</groupId>
   <artifactId>atomix-parent</artifactId>
-  <version>3.2.0-RELEASE</version>
+  <version>3.2.0</version>
   <packaging>pom</packaging>
   <name>Atomix Parent Pom</name>
   <description>Distributed systems framework.</description>
