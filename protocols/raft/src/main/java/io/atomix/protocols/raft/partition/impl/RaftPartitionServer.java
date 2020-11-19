@@ -15,6 +15,8 @@
  */
 package io.atomix.protocols.raft.partition.impl;
 
+import static org.slf4j.LoggerFactory.getLogger;
+
 import io.atomix.cluster.ClusterMembershipService;
 import io.atomix.cluster.MemberId;
 import io.atomix.cluster.messaging.ClusterCommunicationService;
@@ -30,11 +32,6 @@ import io.atomix.utils.Managed;
 import io.atomix.utils.concurrent.Futures;
 import io.atomix.utils.concurrent.ThreadContextFactory;
 import io.atomix.utils.serializer.Serializer;
-import java.util.Set;
-import java.util.concurrent.CopyOnWriteArraySet;
-import java.util.function.Consumer;
-import org.slf4j.Logger;
-
 import java.io.IOException;
 import java.nio.file.FileVisitResult;
 import java.nio.file.Files;
@@ -42,9 +39,11 @@ import java.nio.file.Path;
 import java.nio.file.SimpleFileVisitor;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.util.Collection;
+import java.util.Set;
 import java.util.concurrent.CompletableFuture;
-
-import static org.slf4j.LoggerFactory.getLogger;
+import java.util.concurrent.CopyOnWriteArraySet;
+import java.util.function.Consumer;
+import org.slf4j.Logger;
 
 /**
  * {@link Partition} server.
@@ -219,5 +218,14 @@ public class RaftPartitionServer implements Managed<RaftPartitionServer> {
   @Override
   public boolean isRunning() {
     return server.isRunning();
+  }
+
+  /**
+   * Returns whether the server is the leader.
+   *
+   * @return whether the server is the leader
+   */
+  public boolean isLeader() {
+    return server.isLeader();
   }
 }

@@ -246,6 +246,15 @@ public class RaftPartition implements Partition {
     });
   }
 
+  /**
+   * Returns whether the server is the leader.
+   *
+   * @return whether the server is the leader
+   */
+  public boolean isLeader() {
+    return server.isLeader();
+  }
+
   @Override
   public String toString() {
     return toStringHelper(this)
